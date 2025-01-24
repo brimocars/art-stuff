@@ -9,7 +9,7 @@
 export function getRandomInts(min, max, howManyInts) {
     const numbers = [];
     for (let i = 0; i < howManyInts; i++) {
-        numbers.push(Math.random() * (max - min) + min);
+        numbers.push(Math.floor(Math.random() * (max - min) + min));
     }
     return numbers;
 }
