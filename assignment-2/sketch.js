@@ -2,7 +2,7 @@ let flipped = false;
 let prevFlipped = true;
 const maxBlue = 239;
 const minBlue = 0;
-const howManyPixels = 500000;
+const howManyPixels = 50000;
 const width = 1000;
 const height = 1000;
 const averageOfMiddles = (width + height) / 4;
@@ -45,7 +45,7 @@ function draw() {
         y = flipAwayFromCenter(y, height);
       }
       fill(255, 255, howMuchBlue);
-      rect(x, y, 5, 5);
+      rect(x, y, 20, 20);
     } else {
       let x;
       let y;
@@ -72,7 +72,7 @@ function draw() {
       howMuchBlue = (((averageOfMiddles - nearCenter) / averageOfMiddles) * (maxBlue - minBlue)) + minBlue + arbitraryBlueToAdd;
 
       fill(redAndGreen, redAndGreen, howMuchBlue);
-      rect(x, y, 5, 5);;
+      rect(x, y, 20, 20);;
     }
   }
 }
