@@ -6,10 +6,14 @@
  * @param {Number} max 
  * @param {Number} howManyInts
  */
-export function getRandomInts(min, max, howManyInts) {
-    const numbers = [];
-    for (let i = 0; i < howManyInts; i++) {
-        numbers.push(Math.floor(Math.random() * (max - min) + min));
-    }
-    return numbers;
+export function getRandomInts(min, max, howManyInts = 1) {
+  if (howManyInts === 1) {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+  
+  const numbers = [];
+  for (let i = 0; i < howManyInts; i++) {
+      numbers.push(Math.floor(Math.random() * (max - min) + min));
+  }
+  return numbers;
 }
