@@ -7,8 +7,3 @@ canvas {
   display: block;
   /* justify-self: center; */
 }
-
-div {
-  display: flex;
-  justify-content: center;
-}
