@@ -378,7 +378,7 @@ class ChildNode {
   }
 
   draw() {
-    if (this.x + childSize / 2 <= width) {
+    if (this.x + childSize / 2 <= width && this.y + childSize <= height) {
       switch (nodeModes.get(nodeMode % nodeModes.size)) {
         case 'balls':
           fill(this.color);
@@ -425,7 +425,7 @@ function setUpSliders() {
     fill(0, 0, 0);
 
     button.position(10, height + 15);
-    reflect.position(10, height + 40);
+    reflect.position(10 + width/2, height + 15);
     
     textSize(10);
 
@@ -443,6 +443,9 @@ function setUpSliders() {
 
     text('Chance to wiggle', 10, height + 335);
     wiggleChanceSlider.position(10, height + 350);
+
+    text('Nodes to path through', 10, height + 475);
+    percentOfNodesToHitBeforeStoppingSlider.position(200, height + 420);
 
     text('Child spawning distance multiplier', 200, height + 75);
     childDistanceMultiplierSlider.position(200, height + 90);
@@ -462,8 +465,6 @@ function setUpSliders() {
     text('Frame rate', 200, height + 405);
     frameRateSlider.position(200, height + 420);
 
-    text('Nodes to path through', 200, height + 475);
-    percentOfNodesToHitBeforeStoppingSlider.position(200, height + 490);
 
   } else {
     rect(width, 0, 200, height);
