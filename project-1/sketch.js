@@ -43,6 +43,7 @@ let maxChilds;
 let frameRateSlider;
 let percentOfNodesToHitBeforeStoppingSlider;
 let percentOfNodesToHitBeforeStopping;
+let reflectMode = 0;
 
 let buffer;
 
@@ -56,8 +57,7 @@ function setup() {
     canvas = createCanvas(width + 200, height);
   }
   setUpSliders();
-  nodes.push(new Node(width / 2, height / 2));
-  // nodes.push(new Node(width * 3 / 4, height * 3 / 4));
+  nodes.push(new Node(width/2, height/2));
 
   buffer = createGraphics(width, height);
 }
@@ -80,30 +80,35 @@ function draw() {
     node.update();
   })
 
-  fill(0, 0, 0);
   rect(0, 0, width, height);
+  
+  push();
+  fill(255, 255, 255);
+  text(`${nodeModes.get(nodeMode % nodeModes.size)}`, 20, 40);
+  pop();
+
+  push();
+  if (reflectMode % 2 === 1) {
+    translate(-width / 6, -height / 6);
+  }
+  fill(0, 0, 0);
   nodes.forEach((node) => {
     node.draw();
   })
-  fill(255, 255, 255);
-  text(`${nodeModes.get(nodeMode % nodeModes.size)}`, 20, 40);
+  pop();
 
-
-  // // Get the current canvas content
-  // const canvasContent = get(0, 0, width, height);
-
-  // // Copy a section of the canvas content to the buffer
-  // buffer.image(canvasContent, 0, 0, width, height);
-
-  // // Apply transformations to the buffer
-  // buffer.push();
-  // buffer.translate(width / 2, height / 2); // Move the buffer to the center
-  // buffer.scale(, 10); // Flip the buffer horizontally
-  // buffer.filter(INVERT); // Invert the colors
-  // buffer.pop();
-
-  // // Draw the buffer to a different part of the canvas
-  // image(buffer, 0, height/2, width, height);
+  if (reflectMode % 2 === 1) {
+    push();
+    translate(1/2 * width, 1/2 * height);
+    rotate(180);
+    translate(-2/3 * width, -2/3 * height);
+    // translate(3/4 * width, 3/4 * height);
+    fill(0, 0, 0);
+    nodes.forEach((node) => {
+      node.draw();
+    })
+    pop();
+  }
 }
 
 class Node {
@@ -235,6 +240,7 @@ class Node {
           }
         }
         push();
+        strokeWeight(4);
         noFill();
         stroke(this.color);
         beginShape();
@@ -255,6 +261,7 @@ class Node {
         pop();
 
         push();
+        strokeWeight(4);
         noFill();
         stroke(255 - this.color._getRed(), 255 - this.color._getGreen(), 255 - this.color._getBlue());
         beginShape();
@@ -396,6 +403,10 @@ function setUpSliders() {
   button.size(170);
   button.mouseClicked(() => nodeMode++);
 
+  const reflect = createButton('Toggle reflect');
+  reflect.size(170);
+  reflect.mouseClicked(() => reflectMode++);
+
   childRepulsionRangeSlider = createSlider(1, 50, 20, 1);
   childRepulsionForceSlider = createSlider(1, 20, 10, 1);
   pushFromParentForceSlider = createSlider(1, 20, 10, 1);
@@ -414,6 +425,8 @@ function setUpSliders() {
     fill(0, 0, 0);
 
     button.position(10, height + 15);
+    reflect.position(10, height + 40);
+    
     textSize(10);
 
     text('Child repulsion range', 10, height + 75);
@@ -457,6 +470,8 @@ function setUpSliders() {
     fill(0, 0, 0);
 
     button.position(width + 10, 15);
+    reflect.position(width + 10, 40);
+
     textSize(10);
 
     text('Child repulsion range', width + 10, 75);
