@@ -13,8 +13,9 @@ const nodes = [];
 
 const nodeModes = new Map([
   [0, 'balls'],
-  [1, 'trippyTriangles'],
-  [2, 'path']
+  [1, 'triangles'],
+  [2, 'path'],
+  [3, 'shape'],
 ]);
 let nodeMode = 0;
 
@@ -43,15 +44,22 @@ let frameRateSlider;
 let percentOfNodesToHitBeforeStoppingSlider;
 let percentOfNodesToHitBeforeStopping;
 
+let buffer;
+
 function setup() {
+  angleMode(DEGREES);
   noStroke();
+  let canvas;
   if (areSlidersBelow) {
-    createCanvas(width, height + 1000);
+    canvas = createCanvas(width, height + 1000);
   } else {
-    createCanvas(width + 200, height);
+    canvas = createCanvas(width + 200, height);
   }
   setUpSliders();
   nodes.push(new Node(width / 2, height / 2));
+  // nodes.push(new Node(width * 3 / 4, height * 3 / 4));
+
+  buffer = createGraphics(width, height);
 }
 
 function draw() {
@@ -80,6 +88,22 @@ function draw() {
   fill(255, 255, 255);
   text(`${nodeModes.get(nodeMode % nodeModes.size)}`, 20, 40);
 
+
+  // // Get the current canvas content
+  // const canvasContent = get(0, 0, width, height);
+
+  // // Copy a section of the canvas content to the buffer
+  // buffer.image(canvasContent, 0, 0, width, height);
+
+  // // Apply transformations to the buffer
+  // buffer.push();
+  // buffer.translate(width / 2, height / 2); // Move the buffer to the center
+  // buffer.scale(, 10); // Flip the buffer horizontally
+  // buffer.filter(INVERT); // Invert the colors
+  // buffer.pop();
+
+  // // Draw the buffer to a different part of the canvas
+  // image(buffer, 0, height/2, width, height);
 }
 
 class Node {
@@ -128,15 +152,15 @@ class Node {
   }
 
   draw() {
+    fill(this.color);
+    circle(this.x, this.y, nodeSize);
     switch (nodeModes.get(nodeMode % nodeModes.size)) {
       case 'balls':
-        fill(this.color);
-        circle(this.x, this.y, nodeSize);
         this.childNodes.forEach((child) => {
           child.draw();
         })
         break;
-      case 'trippyTriangles':
+      case 'triangles':
         fill(this.color);
         beginShape();
         this.childNodes.forEach((child) => {
@@ -147,35 +171,99 @@ class Node {
         endShape(CLOSE);
         break;
       case 'path':
-        // fill(this.color);
-        // //beginShape();
-        // push();
-        // stroke(this.color);
-        // strokeWeight(10);
-        // const set = new Set();
-        // let currentChild = this.childNodes[0];
-        // while (set.size < percentOfNodesToHitBeforeStopping * this.childNodes.length) {
-        //   console.log(currentChild);
-        //   if (currentChild.x <= width && currentChild.y <= height) {
-        //     //vertex(currentChild.x, currentChild.y);
-        //   }
-        //   set.add(currentChild);
-        //   const nextChild = this.findClosestSibling(currentChild, set);
-        //   line(currentChild.x, currentChild.y, nextChild?.x ?? 0, nextChild?.y ?? 0);
-        //   currentChild = nextChild;
-        // }
-        // //endShape(CLOSE);
-        // pop();
-        // break;
-        fill(this.color);
         push();
-        stroke(this.color);
         strokeWeight(childSize / 2);
-        // TODO: Make this work with multiple paths
-        const path = this.generatePath();
-        for (let i = 0; i < path.length - 1; i++) {
-          line(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
+        const usedNodes = [];
+        let totalUsedNodes = 0;
+        while (totalUsedNodes < percentOfNodesToHitBeforeStopping * this.childNodes.length) {
+          const path = this.generatePath(usedNodes);
+          stroke(path[0].color);
+          for (let i = 0; i < path.length - 1; i++) {
+            if (path[i].x <= width && path[i].y <= height && path[i + 1].x <= width && path[i + 1].y <= height) {
+              line(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
+            }
+          }
+          usedNodes.push(path);
+          totalUsedNodes += path.length;
         }
+
+        pop();
+        break;
+      case 'shape':
+        const nodesToDrawThrough1 = [];
+        const nodesToDrawThrough2 = [];
+        const nodesToDrawThrough3 = [];
+        const howMany = percentOfNodesToHitBeforeStopping * 100;
+        for (let i = 0; i < howMany; i++) {
+          const angle = 360 / howMany * i;
+
+          const p1 = { x: this.x + cos(angle) * width, y: this.y + sin(angle) * height };
+          const p2 = { x: this.x, y: this.y };
+          const ray = { p1, p2 };
+
+          const interceptingCircles = [];
+          for (let j = 0; j < this.childNodes.length; j++) {
+            const circle = {
+              x: this.childNodes[j].x,
+              y: this.childNodes[j].y,
+              radius: childSize / 2,
+            }
+            if (rayInterceptsCircle(ray, circle)) {
+              interceptingCircles.push(this.childNodes[j]);
+            }
+          }
+          let nodeToUse1 = interceptingCircles[getRandomInts(0, interceptingCircles.length)];
+          let nodeToUse2 = interceptingCircles[0];
+          let nodeToUse3 = interceptingCircles[0];
+          for (let k = 1; k < interceptingCircles.length; k++) {
+            const currentDist = interceptingCircles[k].distanceTo({ x: this.x, y: this.y });
+            if (currentDist > nodeToUse2.distanceTo({ x: this.x, y: this.y })) {
+              nodeToUse2 = interceptingCircles[k];
+            }
+            if (currentDist < nodeToUse3.distanceTo({ x: this.x, y: this.y })) {
+              nodeToUse3 = interceptingCircles[k];
+            }
+          }
+          if (nodeToUse1) {
+            nodesToDrawThrough1.push(nodeToUse1);
+          }
+          if (nodeToUse2) {
+            nodesToDrawThrough2.push(nodeToUse2);
+          }
+          if (nodeToUse3) {
+            nodesToDrawThrough3.push(nodeToUse3);
+          }
+        }
+        push();
+        noFill();
+        stroke(this.color);
+        beginShape();
+        nodesToDrawThrough2.forEach((n) => {
+          if (n.x <= width && n.y <= height) {
+            curveVertex(n.x, n.y);
+          }
+        })
+        endShape(CLOSE);
+
+        beginShape();
+        nodesToDrawThrough3.forEach((n) => {
+          if (n.x <= width && n.y <= height) {
+            vertex(n.x, n.y);
+          }
+        })
+        endShape(CLOSE);
+        pop();
+
+        push();
+        noFill();
+        stroke(255 - this.color._getRed(), 255 - this.color._getGreen(), 255 - this.color._getBlue());
+        beginShape();
+        nodesToDrawThrough1.forEach((n) => {
+          if (n.x <= width && n.y <= height) {
+            curveVertex(n.x, n.y);
+          }
+        })
+        endShape(CLOSE);
         pop();
         break;
     }
@@ -188,25 +276,10 @@ class Node {
     }
   }
 
-  // findClosestSibling(child, set) {
-  //   let currentClosest = null;
-  //   let currentSmallestDistance = Infinity;
-  //   this.childNodes.forEach((otherChild) => {
-  //     if (!set.has(otherChild)) {
-  //       const distance = child.distanceTo(otherChild);
-  //       if (distance < currentSmallestDistance) {
-  //         currentClosest = otherChild;
-  //         currentSmallestDistance = distance;
-  //       }
-  //     }
-  //   })
-  //   return currentClosest;
-  // }
-
-  generatePath() {
+  generatePath(usedNodes) {
     const path = [];
     const visited = new Set();
-    let currentNode = this.childNodes[0];
+    let currentNode = this.getNextUnusedNode(usedNodes);
     path.push(currentNode);
     visited.add(currentNode);
     let attempts = 0;
@@ -216,9 +289,9 @@ class Node {
       let nearestDistance = Infinity;
 
       this.childNodes.forEach((node) => {
-        if (!visited.has(node)) {
+        if (!visited.has(node) && !usedNodes.some((usedPath) => usedPath.includes(node))) {
           const distance = currentNode.distanceTo(node);
-          if (distance < nearestDistance && !this.wouldCross(path, currentNode, node)) {
+          if (distance < nearestDistance && !this.wouldCross(path, currentNode, node, usedNodes)) {
             nearestDistance = distance;
             nearestNode = node;
           }
@@ -237,17 +310,24 @@ class Node {
     return path;
   }
 
-  wouldCross(path, currentNode, nextNode) {
+  wouldCross(path, currentNode, nextNode, usedNodes) {
     for (let i = 0; i < path.length - 1; i++) {
       if (this.linesCross(path[i], path[i + 1], currentNode, nextNode)) {
         return true;
       }
     }
+    for (let i = 0; i < usedNodes.length; i++) {
+      for (let j = 0; j < usedNodes[i].length - 1; j++) {
+        if (this.linesCross(usedNodes[i][j], usedNodes[i][j + 1], currentNode, nextNode)) {
+          return true
+        }
+      }
+    }
     return false;
   }
 
-  // Some github copilot nonsense, PLEASE don't ask me to explain it
-  // But boy howdy does it work
+  // Some github copilot nonsense, please don't ask me to explain it
+  // But boy howdy does it kinda work
   linesCross(a, b, c, d) {
     const det = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x);
     if (det === 0) {
@@ -257,6 +337,26 @@ class Node {
     const gamma = ((a.y - b.y) * (d.x - a.x) + (b.x - a.x) * (d.y - a.y)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
+
+  getNextUnusedNode(usedNodes) {
+    let nextNode = null;
+    let i = 0;
+    while (nextNode === null) {
+      nextNode = usedNodes.some((usedPath) => usedPath.includes(this.childNodes[i])) ? null : this.childNodes[i];
+      i++;
+    }
+    return nextNode;
+  }
+}
+
+// from https://stackoverflow.com/questions/76239528/how-to-check-if-a-line-is-intersecting-with-a-circle-in-javascript
+function rayInterceptsCircle(ray, circle) {
+  const dx = ray.p2.x - ray.p1.x;
+  const dy = ray.p2.y - ray.p1.y;
+  const u = Math.min(1, Math.max(0, ((circle.x - ray.p1.x) * dx + (circle.y - ray.p1.y) * dy) / (dy * dy + dx * dx)));
+  const nx = ray.p1.x + dx * u - circle.x;
+  const ny = ray.p1.y + dy * u - circle.y;
+  return nx * nx + ny * ny < circle.radius * circle.radius;
 }
 
 class ChildNode {
@@ -277,7 +377,7 @@ class ChildNode {
           fill(this.color);
           circle(this.x, this.y, childSize);
           break;
-        case 'trippyTriangles':
+        case 'triangles':
           break;
       }
     }
@@ -302,9 +402,9 @@ function setUpSliders() {
   pullFromParentForceSlider = createSlider(0, 10, 0.5, 0.5);
   wiggleChanceSlider = createSlider(0, 1, 0, 0.01);
   childDistanceMultiplierSlider = createSlider(0, 3, 0.5, 0.1);
-  childColorRangeSlider = createSlider(0, 50, 10, 1);
+  childColorRangeSlider = createSlider(0, 50, 20, 1);
   childGenerationChanceSlider = createSlider(0, 0.5, 0.1, 0.001);
-  childSizeSlider = createSlider(1, 40, 20, 1);
+  childSizeSlider = createSlider(1, 40, 28, 1);
   maxChildsSlider = createSlider(10, 1000000, 1000, 10);
   frameRateSlider = createSlider(1, 60, 60, 1);
   percentOfNodesToHitBeforeStoppingSlider = createSlider(0, 1, 1, 0.01);
@@ -349,7 +449,7 @@ function setUpSliders() {
     text('Frame rate', 200, height + 405);
     frameRateSlider.position(200, height + 420);
 
-    text('Nodes to vertex through', 200, height + 475);
+    text('Nodes to path through', 200, height + 475);
     percentOfNodesToHitBeforeStoppingSlider.position(200, height + 490);
 
   } else {
