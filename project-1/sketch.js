@@ -18,6 +18,7 @@ const nodeModes = new Map([
   [3, 'shape'],
 ]);
 let nodeMode = 0;
+let lowerBound = 0;
 
 
 let childRepulsionRangeSlider;
@@ -50,11 +51,10 @@ let buffer;
 function setup() {
   angleMode(DEGREES);
   noStroke();
-  let canvas;
   if (areSlidersBelow) {
-    canvas = createCanvas(width, height + 1000);
+    createCanvas(width, height + 500);
   } else {
-    canvas = createCanvas(width + 200, height);
+    createCanvas(width + 200, height);
   }
   setUpSliders();
   nodes.push(new Node(width/2, height/2));
@@ -102,11 +102,12 @@ function draw() {
     translate(1/2 * width, 1/2 * height);
     rotate(180);
     translate(-2/3 * width, -2/3 * height);
-    // translate(3/4 * width, 3/4 * height);
     fill(0, 0, 0);
+    lowerBound = height * 1/6 + childSize/2;
     nodes.forEach((node) => {
       node.draw();
     })
+    lowerBound = 0;
     pop();
   }
 }
@@ -169,7 +170,7 @@ class Node {
         fill(this.color);
         beginShape();
         this.childNodes.forEach((child) => {
-          if (child.x <= width && child.y <= height) {
+          if (isInBounds(child.x, child.y, lowerBound, areSlidersBelow, 0)) {
             vertex(child.x, child.y);
           }
         })
@@ -184,7 +185,7 @@ class Node {
           const path = this.generatePath(usedNodes);
           stroke(path[0].color);
           for (let i = 0; i < path.length - 1; i++) {
-            if (path[i].x <= width && path[i].y <= height && path[i + 1].x <= width && path[i + 1].y <= height) {
+            if (isInBounds(path[i].x, path[i].y, lowerBound, areSlidersBelow) && isInBounds(path[i + 1].x, path[i + 1].y, lowerBound, areSlidersBelow, childSize / 2)) {
               line(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
             }
           }
@@ -245,7 +246,7 @@ class Node {
         stroke(this.color);
         beginShape();
         nodesToDrawThrough2.forEach((n) => {
-          if (n.x <= width && n.y <= height) {
+          if (isInBounds(n.x, n.y, lowerBound, areSlidersBelow, 4)) {
             curveVertex(n.x, n.y);
           }
         })
@@ -253,7 +254,7 @@ class Node {
 
         beginShape();
         nodesToDrawThrough3.forEach((n) => {
-          if (n.x <= width && n.y <= height) {
+          if (isInBounds(n.x, n.y, lowerBound, areSlidersBelow, 4)) {
             vertex(n.x, n.y);
           }
         })
@@ -266,7 +267,7 @@ class Node {
         stroke(255 - this.color._getRed(), 255 - this.color._getGreen(), 255 - this.color._getBlue());
         beginShape();
         nodesToDrawThrough1.forEach((n) => {
-          if (n.x <= width && n.y <= height) {
+          if (isInBounds(n.x, n.y, lowerBound, areSlidersBelow, 4)) {
             curveVertex(n.x, n.y);
           }
         })
@@ -378,7 +379,7 @@ class ChildNode {
   }
 
   draw() {
-    if (this.x + childSize / 2 <= width && this.y + childSize <= height) {
+    if (isInBounds(this.x, this.y, lowerBound, areSlidersBelow)) {
       switch (nodeModes.get(nodeMode % nodeModes.size)) {
         case 'balls':
           fill(this.color);
@@ -392,6 +393,18 @@ class ChildNode {
 
   distanceTo(otherChild) {
     return Math.pow(this.x - otherChild.x, 2) + Math.pow(this.y - otherChild.y, 2);
+  }
+}
+
+function isInBounds(x, y, lowerBound, areSlidersBelow, buffer = childSize) {
+  if (lowerBound === 0) {
+    return x + buffer / 2 <= width && y + buffer / 2 <= height;
+  } else {
+    if (areSlidersBelow) {
+      return y > lowerBound;
+    } else {
+      return x > lowerBound;
+    }
   }
 }
 
@@ -444,8 +457,8 @@ function setUpSliders() {
     text('Chance to wiggle', 10, height + 335);
     wiggleChanceSlider.position(10, height + 350);
 
-    text('Nodes to path through', 10, height + 475);
-    percentOfNodesToHitBeforeStoppingSlider.position(200, height + 420);
+    text('Nodes to path through', 10, height + 405);
+    percentOfNodesToHitBeforeStoppingSlider.position(10, height + 420);
 
     text('Child spawning distance multiplier', 200, height + 75);
     childDistanceMultiplierSlider.position(200, height + 90);
@@ -464,7 +477,6 @@ function setUpSliders() {
 
     text('Frame rate', 200, height + 405);
     frameRateSlider.position(200, height + 420);
-
 
   } else {
     rect(width, 0, 200, height);
