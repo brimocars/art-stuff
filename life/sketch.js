@@ -13,7 +13,7 @@ function setup() {
   for(let x = 0; x < width; x += cellSize) {
     const row = [];
     for(let y = 0; y < width; y += cellSize) {
-      row.push(new Cell(x, y, Math.random() > 0.95))
+      row.push(new Cell(x, y, Math.random() > 0.9))
     }
     cells.push(row);
   }
@@ -116,7 +116,7 @@ function setUpControls() {
   fill(0,0,0)
   
   text('Framerate', width + 10, 75)
-  frameRateSlider = createSlider(0, 60, 10, 1);
+  frameRateSlider = createSlider(0, 60, 15, 1);
   frameRateSlider.position(width + 10, 75);
   frameRateSlider.size(80);
   frameRateSlider.mouseClicked(() => frameRate(frameRateSlider.value()))
