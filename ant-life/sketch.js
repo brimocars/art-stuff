@@ -29,7 +29,7 @@ function setup() {
   for (let x = 0; x < width; x += cellSize) {
     const row = [];
     for (let y = 0; y < height; y += cellSize) {
-      row.push(new Cell(x, y, Math.random() > 0.95))
+      row.push(new Cell(x, y, false));//Math.random() > 0.95))
     }
     cells.push(row);
   }
