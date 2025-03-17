@@ -3,6 +3,7 @@
  * - add more states, something with prevStates and branching paths maybe
  * - make mobile friendly?
  * - make the code better for the mouse events
+ * - cell size slider
  */
 
 
