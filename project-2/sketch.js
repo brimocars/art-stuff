@@ -1,14 +1,7 @@
-/**
- * TODO:
- * - add more states, something with prevStates and branching paths maybe
- * - make mobile friendly?
- * - FIX NEIGHBORS
- */
+const defaultCellSize = 50;
 
-const defaultCellSize = 25;
-
-let width = window.innerWidth - 200 - ((window.innerWidth - 200) % defaultCellSize);
-let height = window.innerHeight - ((window.innerHeight) % defaultCellSize);
+let width = window.innerWidth - 200 - ((window.innerWidth - 200) % 25);
+let height = window.innerHeight - ((window.innerHeight) % 25);
 const originalWidth = width;
 const originalHeight = height;
 let sectionWidth = width / 2;
@@ -21,9 +14,11 @@ const defaultState = {
   x: width * 3 / 4,
   y: height / 2,
   angle: 270,
-  lineLength: 20,
-  diameter: 2,
+  lineLength: 10,
+  diameter: 20,
   h: 0,
+  weightOfStroke: 5,
+  curl: 10,
 };
 let state = {};
 const prevStates = [];
@@ -33,7 +28,13 @@ const transformations = {
   '1': '1',
   '+': '+',
   '-': '-',
+  '[': '[10[',
+  ']': ']10]',
 }
+const allowedChars = new Set();
+Object.keys(transformations).forEach((char) => allowedChars.add(char));
+console.log(allowedChars);
+
 const rules = {
   '0': () => {
     const endX = state.x + cos(state.angle) * state.lineLength;
@@ -44,6 +45,7 @@ const rules = {
     // floating point error correction
     if (Math.abs(newEndX - endX) < 0.000001 && Math.abs(newEndY - endY) < 0.000001) {
       stroke(state.h, 50, 50);
+      strokeWeight(state.weightOfStroke);
       line(state.x, state.y, endX, endY);
     }
     if (newEndX + state.diameter / 2 <= width && newEndX - state.diameter / 2 >= sectionWidth) {
@@ -61,6 +63,7 @@ const rules = {
     const newEndY = ((endY + (height)) % height);
 
     if (Math.abs(newEndX - endX) < 0.000001 && Math.abs(newEndY - endY) < 0.000001) {
+      strokeWeight(state.weightOfStroke);
       stroke(state.h, 50, 50);
       line(state.x, state.y, endX, endY);
     }
@@ -70,10 +73,30 @@ const rules = {
     state.h = state.h % 360;
   },
   '+': () => {
-    state.angle -= 10;
+    state.angle -= state.curl;
   },
   '-': () => {
-    state.angle += 10;
+    state.angle += state.curl;
+  },
+  '[': () => {
+    prevStates.push(structuredClone(state));
+    state.lineLength--;
+    if (state.lineLength <= 0) {
+      state.lineLength = 1;
+    }
+    state.diameter--;
+    if (state.diameter <= 0) {
+      state.diameter = 1;
+    }
+    state.weightOfStroke--;
+    if (state.weightOfStroke <= 0) {
+      state.weightOfStroke = 1;
+    }
+    state.curl++;
+  },
+  ']': () => {
+    state = prevStates.pop();
+    state.curl--;
   },
 }
 
@@ -88,6 +111,7 @@ let inputMinus;
 let aliveChanceSlider;
 let cellSizeSlider;
 let cellSize;
+let curlSlider;
 
 function setup() {
   doSetupStuff(true);
@@ -103,6 +127,10 @@ function doSetupStuff(firstTime = false) {
     rect(sectionWidth, 0, sectionWidth, height);
     rect(width, 0, 200, height);
     setUpControls();
+    transformations['0'] = input0.value();
+    transformations['1'] = input1.value();
+    transformations['+'] = inputPlus.value();
+    transformations['-'] = inputMinus.value();
     angleMode(DEGREES);
     colorMode('hsl');
     noStroke();
@@ -110,15 +138,6 @@ function doSetupStuff(firstTime = false) {
     cells.length = 0;
     axiom = '';
     draw();
-  }
-
-  axiom = '';
-  for (let i = 0; i < generations; i++) {
-    let newString = '';
-    for (let j = 0; j < axiom.length; j++) {
-      newString += transformations[axiom[j]] ?? axiom[j]
-    }
-    axiom = newString;
   }
 
   regenerateCells();
@@ -134,11 +153,12 @@ function draw() {
 
   defaultState.lineLength = lineLengthSlider.value();
   defaultState.diameter = diameterSlider.value();
+  defaultState.curl = curlSlider.value()
   transformations['0'] = input0.value();
   transformations['1'] = input1.value();
   transformations['+'] = inputPlus.value();
   transformations['-'] = inputMinus.value();
-  
+
   updateCells();
   cells.forEach((row) => {
     row.forEach((c) => {
@@ -151,6 +171,7 @@ function draw() {
 function regenerateAxiom() {
   generations = generationsSlider.value();
   axiom = '';
+  let nextCharIsOpen = true;
   cells.forEach((row) => {
     let alivitivity = 0
     row.forEach((c) => {
@@ -158,6 +179,8 @@ function regenerateAxiom() {
       alivitivity += c.isAlive;
     })
     axiom += alivitivity > 0 ? '+' : '-';
+    axiom += nextCharIsOpen ? '[' : ']';
+    nextCharIsOpen = !nextCharIsOpen;
   })
 
   for (let i = 0; i < generations; i++) {
@@ -168,6 +191,8 @@ function regenerateAxiom() {
     axiom = newString;
   }
 
+  console.log(axiom);
+
   state = structuredClone(defaultState);
   push();
   fill(100, 100, 100);
@@ -177,35 +202,43 @@ function regenerateAxiom() {
   push();
   fill(0, 0, 0);
   stroke(0, 0, 0);
-  strokeWeight(5);
   for (let i = 0; i < axiom.length; i++) {
-    rules[axiom[i]]();
+    if (allowedChars.has(axiom[i])) {
+      rules[axiom[i]]();
+    } else {
+      console.log('not allowed')
+    }
   }
   pop();
 }
 
 function updateCells() {
-  const newCells = [];
 
-  for (let i = 0; i < cells.length; i++) {
-    const newRow = [];
-    for (let j = 0; j < cells[0].length; j++) {
-      const currentCell = cells[i][j];
+  cells.forEach((row) => {
+    row.forEach((currentCell) => {
       const neighborsAlive = currentCell.calculateNeighborsAlive();
       if (currentCell.isAlive) {
         if (neighborsAlive < 2 || neighborsAlive > 3) {
-          currentCell.isAlive = false;
+          currentCell.nextIsAlive = false;
+        } else {
+          currentCell.nextIsAlive = true;
         }
       } else {
         if (neighborsAlive === 3) {
-          currentCell.isAlive = true;
+          currentCell.nextIsAlive = true;
+        } else {
+          currentCell.nextIsAlive = false;
         }
       }
-      newRow.push(currentCell);
-    }
-    newCells.push(newRow);
-  }
-  cells = newCells;
+    })
+  })
+
+
+  cells.forEach((row) => {
+    row.forEach((currentCell) => {
+      currentCell.isAlive = currentCell.nextIsAlive;
+    })
+  })
 }
 
 class Cell {
@@ -213,6 +246,7 @@ class Cell {
     this.x = x;
     this.y = y;
     this.isAlive = isAlive;
+    this.nextIsAlive = undefined;
     this.neighbors = [];
   }
 
@@ -239,12 +273,13 @@ function regenerateCells() {
   width = window.innerWidth - 200 - ((window.innerWidth - 200) % cellSize);
   height = window.innerHeight - ((window.innerHeight) % cellSize);
   sectionWidth = width / 2;
+  const chanceToBeAlive = aliveChanceSlider.value() / 100;
 
-  cells.length = 0;
+  cells = [];
   for (let x = 0; x < sectionWidth; x += cellSize) {
     const row = [];
     for (let y = 0; y < height; y += cellSize) {
-      row.push(new Cell(x, y, Math.random() < aliveChanceSlider.value() / 100))
+      row.push(new Cell(x, y, Math.random() < chanceToBeAlive))
     }
     cells.push(row);
   }
@@ -252,17 +287,19 @@ function regenerateCells() {
   for (let x = 0; x < cells.length; x++) {
     for (let y = 0; y < cells[x].length; y++) {
       const neighbors = [];
-      neighbors.push(cells[weirdModThing(x+1, cells.length)][weirdModThing(y-1, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x+1, cells.length)][weirdModThing(y, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x+1, cells.length)][weirdModThing(y+1, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x, cells.length)][weirdModThing(y+1, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x, cells.length)][weirdModThing(y-1, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x-1, cells.length)][weirdModThing(y+1, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x-1, cells.length)][weirdModThing(y, cells[x].length)])
-      neighbors.push(cells[weirdModThing(x-1, cells.length)][weirdModThing(y-1, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x + 1, cells.length)][weirdModThing(y - 1, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x + 1, cells.length)][weirdModThing(y, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x + 1, cells.length)][weirdModThing(y + 1, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x, cells.length)][weirdModThing(y + 1, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x, cells.length)][weirdModThing(y - 1, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x - 1, cells.length)][weirdModThing(y + 1, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x - 1, cells.length)][weirdModThing(y, cells[x].length)])
+      neighbors.push(cells[weirdModThing(x - 1, cells.length)][weirdModThing(y - 1, cells[x].length)])
       cells[x][y].neighbors = neighbors;
+      cells[x][y].drawCell();
     }
   }
+  regenerateAxiom();
 }
 
 function weirdModThing(numberToMod, total) {
@@ -334,33 +371,39 @@ function setUpControls() {
   text('Line Length', width + 10, 105);
   lineLengthSlider = createSlider(1, 50, 10, 1);
   lineLengthSlider.position(width + 10, 105);
-  lineLengthSlider.size(160);  
+  lineLengthSlider.size(160);
 
   text('Node Diameter', width + 10, 145);
   diameterSlider = createSlider(1, 50, 20, 1);
   diameterSlider.position(width + 10, 145);
-  diameterSlider.size(160);  
+  diameterSlider.size(160);
+  
+  text('Curl', width + 10, 195);
+  curlSlider = createSlider(-30, 30, 10, 1);
+  curlSlider.position(width + 10, 195);
+  curlSlider.size(160);
+  curlSlider.mouseReleased(regenerateAxiom)
 
-  text('These text inputs define the rules for the l-system:', width + 10, 195, 160, 100);
+  text('These text inputs define the rules for the l-system:', width + 10, 235, 160, 100);
 
-  text('0 (draw line with circle)', width + 10, 270);
+  text('0 (draw line with circle)', width + 10, 310);
   input0 = createInput('10-');
-  input0.position(width + 10, 275);
+  input0.position(width + 10, 315);
   input0.size(160);
 
-  text('1 (draw line)', width + 10, 320);
-  input1 = createInput('11+1');
-  input1.position(width + 10, 325);
+  text('1 (draw line)', width + 10, 360);
+  input1 = createInput('[1+1]0');
+  input1.position(width + 10, 365);
   input1.size(160);
 
-  text('+ (increase angle)', width + 10, 370);
+  text('+ (increase angle)', width + 10, 410);
   inputPlus = createInput('+');
-  inputPlus.position(width + 10, 375);
+  inputPlus.position(width + 10, 415);
   inputPlus.size(160);
 
-  text('- (decrease angle)', width + 10, 420);
+  text('- (decrease angle)', width + 10, 460);
   inputMinus = createInput('-');
-  inputMinus.position(width + 10, 425);
+  inputMinus.position(width + 10, 460);
   inputMinus.size(160);
 
   text('Cell alive chance (when regenerating)', width + 10, 550, 160, 60);
@@ -377,7 +420,7 @@ function setUpControls() {
   const button = createButton('Regenerate Game of Life');
   button.size(180);
   button.mouseClicked(() => {
-    doSetupStuff(); 
+    doSetupStuff();
     draw();
   });
   button.position(width + 10, 690);
