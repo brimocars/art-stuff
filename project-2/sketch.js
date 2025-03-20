@@ -35,7 +35,6 @@ const transformations = {
 }
 const allowedChars = new Set();
 Object.keys(transformations).forEach((char) => allowedChars.add(char));
-console.log(allowedChars);
 
 const rules = {
   '0': () => {
@@ -55,7 +54,6 @@ const rules = {
     }
     state.x = newEndX;
     state.y = newEndY;
-    // state.h += 5;
   },
   '1': () => {
     const endX = state.x + cos(state.angle) * state.lineLength;
@@ -70,7 +68,6 @@ const rules = {
     }
     state.x = newEndX;
     state.y = newEndY;
-    // state.h += 5;
   },
   '+': () => {
     state.angle -= state.curl;
@@ -84,7 +81,7 @@ const rules = {
     if (state.lineLength <= 0) {
       state.lineLength = 1;
     }
-    state.diamete--;
+    state.diameter--;
     if (state.diameter <= 0) {
       state.diameter = 1;
     }
@@ -198,8 +195,6 @@ function regenerateAxiom() {
     }
     axiom = newString;
   }
-
-  console.log(axiom);
 
   state = structuredClone(defaultState);
   push();
