@@ -30,6 +30,8 @@ const transformations = {
   '-': '-',
   '[': '[10[',
   ']': ']10]',
+  '<': '<<',
+  '>': '>>',
 }
 const allowedChars = new Set();
 Object.keys(transformations).forEach((char) => allowedChars.add(char));
@@ -53,8 +55,7 @@ const rules = {
     }
     state.x = newEndX;
     state.y = newEndY;
-    state.h += 5;
-    state.h = state.h % 360;
+    // state.h += 5;
   },
   '1': () => {
     const endX = state.x + cos(state.angle) * state.lineLength;
@@ -69,8 +70,7 @@ const rules = {
     }
     state.x = newEndX;
     state.y = newEndY;
-    state.h += 5;
-    state.h = state.h % 360;
+    // state.h += 5;
   },
   '+': () => {
     state.angle -= state.curl;
@@ -84,7 +84,7 @@ const rules = {
     if (state.lineLength <= 0) {
       state.lineLength = 1;
     }
-    state.diameter--;
+    state.diamete--;
     if (state.diameter <= 0) {
       state.diameter = 1;
     }
@@ -97,6 +97,14 @@ const rules = {
   ']': () => {
     state = prevStates.pop();
     state.curl--;
+  },
+  '<': () => {
+    state.h += 5;
+    state.h = state.h  % 360;
+  },
+  '>': () => {
+    state.h -= 5;
+    state.h = (state.h + 360) % 360;
   },
 }
 
@@ -270,8 +278,8 @@ function regenerateCells() {
   rect(0, 0, originalWidth, originalHeight);
   pop();
   cellSize = cellSizeSlider.value();
-  width = window.innerWidth - 200 - ((window.innerWidth - 200) % cellSize);
-  height = window.innerHeight - ((window.innerHeight) % cellSize);
+  width = window.innerWidth - 200 - ((window.innerWidth - 200) % 25);
+  height = window.innerHeight - ((window.innerHeight) % 25);
   sectionWidth = width / 2;
   const chanceToBeAlive = aliveChanceSlider.value() / 100;
 
@@ -387,24 +395,26 @@ function setUpControls() {
   text('These text inputs define the rules for the l-system:', width + 10, 235, 160, 100);
 
   text('0 (draw line with circle)', width + 10, 310);
-  input0 = createInput('10-');
+  input0 = createInput('1<0-');
   input0.position(width + 10, 315);
   input0.size(160);
 
   text('1 (draw line)', width + 10, 360);
-  input1 = createInput('[1+1]0');
+  input1 = createInput('>[1+1]0');
   input1.position(width + 10, 365);
   input1.size(160);
 
   text('+ (increase angle)', width + 10, 410);
-  inputPlus = createInput('+');
+  inputPlus = createInput('+<');
   inputPlus.position(width + 10, 415);
   inputPlus.size(160);
 
   text('- (decrease angle)', width + 10, 460);
-  inputMinus = createInput('-');
-  inputMinus.position(width + 10, 460);
+  inputMinus = createInput('->');
+  inputMinus.position(width + 10, 465);
   inputMinus.size(160);
+
+  text('\'<\' and \'>\' control color. You can\'t change these.', width + 10, 500, 165, 100);
 
   text('Cell alive chance (when regenerating)', width + 10, 550, 160, 60);
   aliveChanceSlider = createSlider(0, 100, 50, 1);
