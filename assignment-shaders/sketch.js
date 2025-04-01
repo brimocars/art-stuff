@@ -12,6 +12,8 @@ let accelerationSlider;
 let acceleration = 1;
 let sizeSlider;
 let size = 100;
+let bounceSlider;
+let bounce = 1.0;
 
 
 function preload() {
@@ -31,6 +33,7 @@ function setup() {
 function draw() {
   acceleration = accelerationSlider.value();
   size = sizeSlider.value();
+  bounce = bounceSlider.value();
   background(0);
   translate(-width/2, -height/2); //Preserve coordinate structure from 2D
   shader(shaderProgram);
@@ -60,13 +63,13 @@ class Ball {
     this.velocity += this.acceleration;
     this.y += this.velocity;
     if (this.y > height - size / 2) {
-      this.velocity = -Math.abs(this.velocity * .85);
+      this.velocity = -Math.abs(this.velocity * bounce);
     }
     if (this.y > height - size / 2) {
       this.y = height - size / 2;
     }
     if (this.y < size / 2) {
-      this.velocity = Math.abs(this.velocity * .85);
+      this.velocity = Math.abs(this.velocity * bounce);
     }
     if (this.y <  size / 2) {
       this.y = size / 2;
@@ -82,7 +85,7 @@ class Ball {
 
 
 function mousePressed() {
-  if (mouseX > width && mouseY < 100) {
+  if (mouseX > width && mouseY < 200) {
     return;
   }
   balls.push(new Ball(mouseX, mouseY, 1, acceleration));
@@ -95,7 +98,7 @@ function mousePressed() {
 
 
 function mouseDragged() {
-  if (mouseX > width && mouseY < 100) {
+  if (mouseX > width && mouseY < 200) {
     return;
   }
   if (!mouseDragTimeout) {
@@ -150,5 +153,10 @@ function setUpControls() {
   sizeSlider = createSlider(10, 400, 100, 5);
   sizeSlider.position(width + 10, 65);
   sizeSlider.size(160);
+
+  text('bounce', width + 10, 65);
+  bounceSlider = createSlider(0, 1, 0.85, 0.1);
+  bounceSlider.position(width + 10, 105);
+  bounceSlider.size(160);
   pop();
 }
