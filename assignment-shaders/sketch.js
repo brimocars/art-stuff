@@ -31,8 +31,6 @@ function setup() {
 function draw() {
   acceleration = accelerationSlider.value();
   size = sizeSlider.value();
-  // fill(0);
-  // rect(0, 0, width, height);
   background(0);
   translate(-width/2, -height/2); //Preserve coordinate structure from 2D
   shader(shaderProgram);
@@ -47,6 +45,7 @@ function draw() {
   shaderProgram.setUniform('resolution', [width, height]);
   shaderProgram.setUniform('position', [randomBall.x, randomBall.y]);
   shaderProgram.setUniform('averageSpeed', averageSpeed);
+  shaderProgram.setUniform('width', width);
 }
 
 class Ball {
@@ -66,16 +65,27 @@ class Ball {
     if (this.y > height - size / 2) {
       this.y = height - size / 2;
     }
+    if (this.y < size / 2) {
+      this.velocity = Math.abs(this.velocity * .85);
+    }
+    if (this.y <  size / 2) {
+      this.y = size / 2;
+    }
   }
 
   draw() {
-    circle(this.x, this.y, size);
+    // I think something with the translation and the slider area makes this wrong, so adding 100 readjusts or
+    // something. I don't know.
+    circle(this.x - 100, this.y, size);
   }
 }
 
 
 function mousePressed() {
-  balls.push(new Ball(mouseX, mouseY, -1, acceleration));
+  if (mouseX > width && mouseY < 100) {
+    return;
+  }
+  balls.push(new Ball(mouseX, mouseY, 1, acceleration));
   randomBall = balls[balls.length - 1]; // not random
   mouseDragTimeout = true;
   setTimeout(() => {
@@ -85,12 +95,15 @@ function mousePressed() {
 
 
 function mouseDragged() {
+  if (mouseX > width && mouseY < 100) {
+    return;
+  }
   if (!mouseDragTimeout) {
     mouseDragTimeout = true;
     setTimeout(() => {
       mouseDragTimeout = false;
     }, 50);
-    balls.push(new Ball(mouseX, mouseY, -1, acceleration));
+    balls.push(new Ball(mouseX, mouseY, 1, acceleration));
     randomBall = balls[getRandomInts(0, balls.length - 1)]; // random
   }
 }
@@ -98,7 +111,7 @@ function mouseDragged() {
 function keyPressed() { 
   if(keyCode === 32) {
     balls.forEach((ball) => {
-      ball.y = getRandomInts(size, height - 2 * size);// Math.min(height - 100, height * ball.x / width + 250));
+      ball.y = getRandomInts(height / 2 - size, height / 2 + size);
       ball.velocity = 1; 
       if (ball.y < 0) {
         ball.y = 0;
@@ -127,9 +140,6 @@ function getRandomInts(min, max, howManyInts = 1) {
 
 function setUpControls() {
   push();
-  textSize(15);
-  fill(0, 0, 0);
-  noStroke();
 
   text('acceleration', width + 10, 25);
   accelerationSlider = createSlider(-5, 5, 1, 0.5);
@@ -140,4 +150,5 @@ function setUpControls() {
   sizeSlider = createSlider(10, 400, 100, 5);
   sizeSlider.position(width + 10, 65);
   sizeSlider.size(160);
+  pop();
 }
