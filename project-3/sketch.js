@@ -1,7 +1,3 @@
-// TODO:
-// Make 3d? or maybe it can just be 2d and that's fine.
-// make the color selection more interesting?
-
 const cellSize = 10;
 const width = window.innerWidth - 200 - ((window.innerWidth - 200) % cellSize);
 const height = window.innerHeight - ((window.innerHeight) % cellSize);
@@ -13,13 +9,14 @@ let layerSlider;
 let howManyLayers;
 let killSlider;
 let killMode;
-// let do3DSlider;
-// let do3D;
+let do3DSlider;
+let do3D;
 
 let currentMouseDrag;
 
 const randomStartingHue = getRandomInts(0, 360);
-const colorHues = [0, 1, 2, 3, 4, 5, 6, 7].map((num) => randomStartingHue + num * 360 / 8);
+const hueChange = getRandomInts(20, 70);
+const colorHues = [0, 1, 2, 3, 4, 5, 6, 7].map((num) => randomStartingHue + num * hueChange);
 
 const colors = colorHues.map((hue) => {
   return {
@@ -93,6 +90,7 @@ function setup() {
 function draw() {
   howManyLayers = layerSlider.value();
   killMode = killSlider.value() === 1;
+  do3D = do3DSlider.value() === 1;
 
   push();
   fill(0, 0, 100);
@@ -106,12 +104,16 @@ function draw() {
         c.drawCell(i);
       })
     })
-    cells[i] = updateCells(cells[i]);
+    cells[i] = updateCells(cells[i], cells[weirdModThing(i - 1, howManyLayers + 1)], cells[weirdModThing(i + 1, howManyLayers + 1)]);
     moveAnt(i);
+  }
+
+  for (let i = 0; i <= howManyLayers; i++) {
+    drawAnt(i)
   }
 }
 
-function updateCells(layer) {
+function updateCells(layer, upOne, downOne) {
   const newCells = [];
 
   for (let i = 0; i < layer.length; i++) {
@@ -122,39 +124,138 @@ function updateCells(layer) {
       if (newCell.lastTouchedByAnt > 0) {
         newCell.lastTouchedByAnt--;
       } else {
-        let neighborsAlive = 0;
-        if (layer[((i - 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i + 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i - 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i + 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i - 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
-        if (layer[((i + 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-          neighborsAlive++;
-        }
+        if (do3D) {
 
-        if (currentCell.isAlive) {
-          if (neighborsAlive < 2 || neighborsAlive > 3) {
-            newCell.isAlive = false;
+          let neighborsAlive = 0;
+          if (layer[((i - 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
           }
+          if (layer[((i + 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i - 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i + 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i - 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i + 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (howManyLayers + 1 > 1 && upOne && downOne) {
+            // up a layer
+            if (upOne[((i) + upOne.length) % upOne.length]?.[((j) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i - 1) + upOne.length) % upOne.length]?.[((j) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i + 1) + upOne.length) % upOne.length]?.[((j) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i - 1) + upOne.length) % upOne.length]?.[((j + 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i) + upOne.length) % upOne.length]?.[((j + 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i + 1) + upOne.length) % upOne.length]?.[((j + 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i - 1) + upOne.length) % upOne.length]?.[((j - 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i) + upOne.length) % upOne.length]?.[((j - 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (upOne[((i + 1) + upOne.length) % upOne.length]?.[((j - 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+
+            // down a layer
+            if (downOne[((i) + downOne.length) % downOne.length]?.[((j) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i - 1) + downOne.length) % downOne.length]?.[((j) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i + 1) + downOne.length) % downOne.length]?.[((j) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i - 1) + downOne.length) % downOne.length]?.[((j + 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i) + downOne.length) % downOne.length]?.[((j + 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i + 1) + downOne.length) % downOne.length]?.[((j + 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i - 1) + downOne.length) % downOne.length]?.[((j - 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i) + downOne.length) % downOne.length]?.[((j - 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+            if (downOne[((i + 1) + downOne.length) % downOne.length]?.[((j - 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
+              neighborsAlive++;
+            }
+          }
+
+          if (currentCell.isAlive) {
+            if (neighborsAlive < 5 || neighborsAlive > 9) {
+              newCell.isAlive = false;
+            }
+          } else {
+            if (neighborsAlive === 9 || neighborsAlive === 8) {
+              newCell.isAlive = true;
+            }
+          }
+
         } else {
-          if (neighborsAlive === 3) {
-            newCell.isAlive = true;
+          let neighborsAlive = 0;
+          if (layer[((i - 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i + 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i - 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i + 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i - 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+          if (layer[((i + 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
+            neighborsAlive++;
+          }
+
+          if (currentCell.isAlive) {
+            if (neighborsAlive < 2 || neighborsAlive > 3) {
+              newCell.isAlive = false;
+            }
+          } else {
+            if (neighborsAlive === 3) {
+              newCell.isAlive = true;
+            }
           }
         }
       }
@@ -184,6 +285,20 @@ class Cell {
       square(this.x, this.y, cellSize);
     }
   }
+
+  drawCellIncludingDead(layerIndex) {
+    const opacity = 0.5;
+    if (this.lastTouchedByAnt > 1 && this.isAlive) {
+      fill(...colors[layerIndex].aliveProtected, opacity);
+      square(this.x, this.y, cellSize);
+    } else if (this.isAlive) {
+      fill(...colors[layerIndex].alive, opacity);
+      square(this.x, this.y, cellSize);
+    } else {
+      fill(0, 100, 100);
+      square(this.x, this.y, cellSize);
+    }
+  }
 }
 
 function moveAnt(layerIndex) {
@@ -203,6 +318,11 @@ function moveAnt(layerIndex) {
   const cellsPerColumn = Math.floor(height / cellSize);
   ant.x = (ant.x + cellsPerRow) % cellsPerRow;
   ant.y = (ant.y + cellsPerColumn) % cellsPerColumn;
+}
+
+function drawAnt(layerIndex) {
+  const ant = ants[layerIndex]
+  const currentCell = cells[layerIndex][ant.x][ant.y];
 
   push();
   fill(currentCell.isAlive ? colors[layerIndex].alive : colors[layerIndex].dead);
@@ -214,7 +334,7 @@ function moveAnt(layerIndex) {
   } else {
     square(ant.x * cellSize - cellSize, ant.y * cellSize - cellSize, cellSize * 3)
   }
-  fill(0,0,0);
+  fill(0, 0, 0);
   square(ant.x * cellSize, ant.y * cellSize, cellSize)
   pop();
 }
@@ -251,7 +371,7 @@ function mouseThing() {
         }
       } else {
         cellsToChange[0].isAlive = !cellsToChange[0].isAlive
-        cellsToChange[0].drawCell(i);
+        cellsToChange[0].drawCellIncludingDead(i);
       }
     }
   };
@@ -324,4 +444,9 @@ function setUpControls() {
   killSlider = createSlider(0, 1, 0, 1);
   killSlider.position(width + 10, 225);
   killSlider.size(160);
+
+  text('3D?', width + 10, 275);
+  do3DSlider = createSlider(0, 1, 0, 1);
+  do3DSlider.position(width + 10, 275);
+  do3DSlider.size(160);
 }
