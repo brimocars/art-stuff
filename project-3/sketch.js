@@ -1,6 +1,6 @@
 // TODO:
-// Make the ants more visible somehow? Maybe 3x3? maybe black?
-// Make each layer interact with the others. 3d.
+// Make 3d? or maybe it can just be 2d and that's fine.
+// make the color selection more interesting?
 
 const cellSize = 10;
 const width = window.innerWidth - 200 - ((window.innerWidth - 200) % cellSize);
@@ -11,24 +11,37 @@ let lastTouchedByAntToSetSlider;
 let lastTouchedByAntToSet;
 let layerSlider;
 let howManyLayers;
+let killSlider;
+let killMode;
+// let do3DSlider;
+// let do3D;
 
-let testSlider;
-let test;
+let currentMouseDrag;
 
-const colorHues = [0, 1, 2, 3, 4, 5, 6, 7].map((num) => num * 360 / 8);
+const randomStartingHue = 300;//getRandomInts(0, 360);
+const colorHues = [0, 1, 2, 3, 4, 5, 6, 7].map((num) => randomStartingHue + num * 360 / 8);
 
 const colors = colorHues.map((hue) => {
   return {
     ant: [weirdModThing(hue, 360), 50, 50],
-    alive: [hue, 95, 30],
-    dead: [hue, 95, 30, 0], //lol this doesn't matter, it's always fully transparent 
-    aliveProtected: [hue, 95, 90],
-    deadProtected: [hue, 95, 90, 0],
+    alive: [weirdModThing(hue, 360), 95, 30],
+    dead: [hue, 95, 30, 0], // lol this doesn't matter, it's always fully transparent 
+    aliveProtected: [weirdModThing(hue, 360), 95, 90],
   };
 })
 
+const possibleAnts = shuffle([
+  'LR',
+  'RL',
+  'LRUN',
+  'NUL',
+  'UNRUL',
+  'RLLR',
+  'LRLRURLRL',
+  'ULNNR',
+]);
+
 const ants = [];
-const cellDirection = 'LR';
 const letterMappings = {
   'L': -1,
   'R': 1,
@@ -65,8 +78,12 @@ function setup() {
   }
 
   translatedTurns.length = 0;
-  for (let i = 0; i < cellDirection.length; i++) {
-    translatedTurns.push(letterMappings[cellDirection[i]]);
+  for (let i = 0; i < possibleAnts.length; i++) {
+    const rowThing = []
+    for (let j = 0; j < possibleAnts[i].length; j++) {
+      rowThing.push(letterMappings[possibleAnts[i][j]]);
+    }
+    translatedTurns.push(rowThing);
   }
 
   frameRate(10);
@@ -74,8 +91,9 @@ function setup() {
 }
 
 function draw() {
-  test = testSlider.value();
   howManyLayers = layerSlider.value();
+  killMode = killSlider.value() === 1;
+
   push();
   fill(0, 0, 100);
   rect(0, 0, width, height);
@@ -159,20 +177,10 @@ class Cell {
   drawCell(layerIndex) {
     const opacity = 0.5;
     if (this.lastTouchedByAnt > 1 && this.isAlive) {
-      //fill(0,0,0,1);
       fill(...colors[layerIndex].aliveProtected, opacity);
       square(this.x, this.y, cellSize);
-    } else if (this.lastTouchedByAnt > 1 && !this.isAlive) {
-      //fill(0,0,0,1);
-      fill(...colors[layerIndex].deadProtected, opacity);
-      square(this.x, this.y, cellSize);
     } else if (this.isAlive) {
-      //fill(...colors[1], test);
       fill(...colors[layerIndex].alive, opacity);
-      square(this.x, this.y, cellSize);
-    } else {
-      //fill(...colors[0]);
-      fill(...colors[layerIndex].dead, opacity);
       square(this.x, this.y, cellSize);
     }
   }
@@ -181,7 +189,7 @@ class Cell {
 function moveAnt(layerIndex) {
   const ant = ants[layerIndex]
   const currentCell = cells[layerIndex][ant.x][ant.y];
-  ant.direction = (ant.direction + translatedTurns[currentCell.isAlive ? 1 : 0] + 4) % 4;
+  ant.direction = (ant.direction + translatedTurns[layerIndex][currentCell.isAlive ? 1 : 0] + 4) % 4;
   currentCell.isAlive = !currentCell.isAlive;
   currentCell.lastTouchedByAnt = lastTouchedByAntToSet;
   switch (ant.direction) {
@@ -196,11 +204,69 @@ function moveAnt(layerIndex) {
   ant.x = (ant.x + cellsPerRow) % cellsPerRow;
   ant.y = (ant.y + cellsPerColumn) % cellsPerColumn;
 
-  fill(...colors[layerIndex].ant);
-  square(ant.x * cellSize, ant.y * cellSize, cellSize)
-
+  push();
   fill(currentCell.isAlive ? colors[layerIndex].alive : colors[layerIndex].dead);
-  square(currentCell.x * cellSize, currentCell.y * cellSize, cellSize);
+  square(currentCell.x, currentCell.y, cellSize);
+
+  fill(...colors[layerIndex].ant);
+  if (ant.x * cellSize + cellSize >= width) {
+    rect(ant.x * cellSize - cellSize, ant.y * cellSize - cellSize, cellSize * 2, cellSize * 3)
+  } else {
+    square(ant.x * cellSize - cellSize, ant.y * cellSize - cellSize, cellSize * 3)
+  }
+  fill(0,0,0);
+  square(ant.x * cellSize, ant.y * cellSize, cellSize)
+  pop();
+}
+
+function mouseThing() {
+  const rowClicked = cells[0][(mouseX - (mouseX % cellSize)) / cellSize];
+  if (!rowClicked) {
+    return;
+  }
+  const cellAtMouse = rowClicked[(mouseY - (mouseY % cellSize)) / cellSize]
+  if (cellAtMouse && cellAtMouse !== currentMouseDrag) {
+    currentMouseDrag = cellAtMouse;
+    for (let i = 0; i <= howManyLayers; i++) {
+      const cellsToChange = [];
+      cellsToChange.push(cells[i][cellAtMouse.x / cellSize][cellAtMouse.y / cellSize]);
+
+      if (killMode) {
+        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize - 1, cells[0].length)][cellAtMouse.y / cellSize]);
+        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize + 1, cells[0].length)][cellAtMouse.y / cellSize]);
+        cellsToChange.push(cells[i][cellAtMouse.x / cellSize][weirdModThing(cellAtMouse.y / cellSize - 1, cells[0][0].length)]);
+        cellsToChange.push(cells[i][cellAtMouse.x / cellSize][weirdModThing(cellAtMouse.y / cellSize + 1, cells[0][0].length)]);
+        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize - 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize - 1, cells[0][0].length)]);
+        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize - 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize + 1, cells[0][0].length)]);
+        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize + 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize - 1, cells[0][0].length)]);
+        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize + 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize + 1, cells[0][0].length)]);
+        cellsToChange.forEach((cellToChange) => {
+          cellToChange.isAlive = false;
+        });
+        fill(0, 0, 0);
+        if (cellAtMouse.x + cellSize >= width) {
+          rect(cellsToChange[0].x - cellSize, cellsToChange[0].y - cellSize, cellSize * 2, cellSize * 3);
+        } else {
+          square(cellsToChange[0].x - cellSize, cellsToChange[0].y - cellSize, cellSize * 3);
+        }
+      } else {
+        cellsToChange[0].isAlive = !cellsToChange[0].isAlive
+        cellsToChange[0].drawCell(i);
+      }
+    }
+  };
+}
+
+function mousePressed() {
+  mouseThing()
+}
+
+function mouseDragged() {
+  mouseThing()
+}
+
+function mouseReleased() {
+  currentMouseDrag = undefined;
 }
 
 function weirdModThing(numberToMod, total) {
@@ -217,6 +283,19 @@ function getRandomInts(min, max, howManyInts = 1) {
     numbers.push(Math.floor(Math.random() * (max - min) + min));
   }
   return numbers;
+}
+
+// Fisher-Yates shuffle algorithm from https://bost.ocks.org/mike/shuffle/
+function shuffle(array) {
+  let m = array.length, t, i;
+  while (m) {
+    i = Math.floor(Math.random() * m--);
+    t = array[m];
+    array[m] = array[i];
+    array[i] = t;
+  }
+
+  return array;
 }
 
 function setUpControls() {
@@ -241,8 +320,8 @@ function setUpControls() {
   layerSlider.position(width + 10, 175);
   layerSlider.size(160);
 
-  text('test', width + 10, 375);
-  testSlider = createSlider(0, 1, 0.5, .1);
-  testSlider.position(width + 10, 375);
-  testSlider.size(160);
+  text('deadly cursor?', width + 10, 225);
+  killSlider = createSlider(0, 1, 0, 1);
+  killSlider.position(width + 10, 225);
+  killSlider.size(160);
 }
