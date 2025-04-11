@@ -18,7 +18,7 @@ let killMode;
 
 let currentMouseDrag;
 
-const randomStartingHue = 300;//getRandomInts(0, 360);
+const randomStartingHue = getRandomInts(0, 360);
 const colorHues = [0, 1, 2, 3, 4, 5, 6, 7].map((num) => randomStartingHue + num * 360 / 8);
 
 const colors = colorHues.map((hue) => {
