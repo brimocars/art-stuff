@@ -1,392 +1,181 @@
-const cellSize = 10;
-const width = window.innerWidth - 200 - ((window.innerWidth - 200) % cellSize);
-const height = window.innerHeight - ((window.innerHeight) % cellSize);
-let cells = [];
-let frameRateSlider;
-let lastTouchedByAntToSetSlider;
-let lastTouchedByAntToSet;
-let layerSlider;
-let howManyLayers;
-let killSlider;
-let killMode;
-let do3DSlider;
-let do3D;
-
-let currentMouseDrag;
-
-const randomStartingHue = getRandomInts(0, 360);
-const hueChange = getRandomInts(20, 70);
-const colorHues = [0, 1, 2, 3, 4, 5, 6, 7].map((num) => randomStartingHue + num * hueChange);
-
-const colors = colorHues.map((hue) => {
-  return {
-    ant: [weirdModThing(hue, 360), 50, 50],
-    alive: [weirdModThing(hue, 360), 95, 30],
-    dead: [hue, 95, 30, 0], // lol this doesn't matter, it's always fully transparent 
-    aliveProtected: [weirdModThing(hue, 360), 95, 90],
-  };
-})
-
-const possibleAnts = shuffle([
-  'LR',
-  'RL',
-  'LRUN',
-  'NUL',
-  'UNRUL',
-  'RLLR',
-  'LRLRURLRL',
-  'ULNNR',
-]);
-
-const ants = [];
-const letterMappings = {
-  'L': -1,
-  'R': 1,
-  'U': 2,
-  'N': 0,
+const width = window.innerWidth
+const height = window.innerHeight
+let state = 0;
+const defaultPlayer = {
+  x: width / 2,
+  y: width / 2,
+  speed: 1,
 };
-let translatedTurns = [];
+let player;
+let face;
+let aPose;
+let playerSize = 50;
+let powerupSize = 30;
+let timer = 0;
+
+let austins = [];
+let powerups = [];
+
+// from austin
+// https://github.com/AustinWilloughby/socket-input-transporter/blob/main/hosted/sketch.js
+const socket = io();
+const controllerState = {};
+socket.on('inputFromController', msg => {
+  const breakdown = msg.split('-');
+
+  if (breakdown[1] === 'down') {
+    controllerState[breakdown[0]] = true;
+  }
+  else if (breakdown[1] === 'up') {
+    controllerState[breakdown[0]] = false;
+  }
+});
+
+function preload() {
+  face = loadImage('willoughby_highres_2024.jpg');
+  aPose = loadImage('austin-a-pose.png');
+}
 
 function setup() {
-  colorMode(HSL);
-  createCanvas(width + 200, height);
+  frameRate(60);
+  createCanvas(width, height);
+  angleMode(DEGREES);
   noStroke();
-  fill(0, 0, 100)
-  rect(width, 0, 200, height)
-
-  for (let i = 0; i < colors.length; i++) {
-    ants.push({
-      x: getRandomInts(0, width / cellSize),
-      y: getRandomInts(0, height / cellSize),
-      direction: getRandomInts(0, 4, 1)
-    });
-  };
-
-  for (let layerNum = 0; layerNum < colors.length; layerNum++) {
-    const layer = [];
-    for (let x = 0; x < width; x += cellSize) {
-      const row = [];
-      for (let y = 0; y < height; y += cellSize) {
-        row.push(new Cell(x, y, false));
-      }
-      layer.push(row);
-    }
-    cells.push(layer);
-  }
-
-  translatedTurns.length = 0;
-  for (let i = 0; i < possibleAnts.length; i++) {
-    const rowThing = []
-    for (let j = 0; j < possibleAnts[i].length; j++) {
-      rowThing.push(letterMappings[possibleAnts[i][j]]);
-    }
-    translatedTurns.push(rowThing);
-  }
-
-  frameRate(10);
-  setUpControls();
 }
 
 function draw() {
-  howManyLayers = layerSlider.value();
-  killMode = killSlider.value() === 1;
-  do3D = do3DSlider.value() === 1;
-
-  push();
-  fill(0, 0, 100);
-  rect(0, 0, width, height);
-  pop();
-
-  lastTouchedByAntToSet = lastTouchedByAntToSetSlider.value();
-  for (let i = 0; i <= howManyLayers; i++) {
-    cells[i].forEach((row) => {
-      row.forEach((c) => {
-        c.drawCell(i);
-      })
-    })
-    cells[i] = updateCells(cells[i], cells[weirdModThing(i - 1, howManyLayers + 1)], cells[weirdModThing(i + 1, howManyLayers + 1)]);
-    moveAnt(i);
-  }
-
-  for (let i = 0; i <= howManyLayers; i++) {
-    drawAnt(i)
+  background(255, 255, 255);
+  switch (state) {
+    case 0:
+      stroke(15, 15, 15);
+      textSize(50);
+      text("Press space to start", width / 2 - 200, height / 2);
+      break;
+    case 1:
+      handlePlayer();
+      handleAustins();
+      timer++;
+      break;
+    case 2:
+      stroke(15, 15, 15);
+      textSize(50);
+      text("Game over", width / 2 - 200, height / 2 - 80);
+      text("Press space to reset", width / 2 - 200, height / 2 + 80);
   }
 }
 
-function updateCells(layer, upOne, downOne) {
-  const newCells = [];
+function handlePlayer() {
+  if (controllerState.up) {
+    player.y -= player.speed;
+  }
+  if (controllerState.down) {
+    player.y += player.speed;
+  }
+  if (controllerState.left) {
+    player.x -= player.speed;
+  }
+  if (controllerState.right) {
+    player.x += player.speed;
+  }
+  player.x = weirdModThing(player.x, width);
+  player.y = weirdModThing(player.y, height);
 
-  for (let i = 0; i < layer.length; i++) {
-    const newRow = [];
-    for (let j = 0; j < layer[0].length; j++) {
-      const currentCell = layer[i][j];
-      const newCell = new Cell(currentCell.x, currentCell.y, currentCell.isAlive, currentCell.lastTouchedByAnt);
-      if (newCell.lastTouchedByAnt > 0) {
-        newCell.lastTouchedByAnt--;
-      } else {
-        if (do3D) {
+  const newPowerups = [];
 
-          let neighborsAlive = 0;
-          if (layer[((i - 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i + 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i - 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i + 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i - 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i + 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (howManyLayers + 1 > 1 && upOne && downOne) {
-            // up a layer
-            if (upOne[((i) + upOne.length) % upOne.length]?.[((j) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i - 1) + upOne.length) % upOne.length]?.[((j) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i + 1) + upOne.length) % upOne.length]?.[((j) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i - 1) + upOne.length) % upOne.length]?.[((j + 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i) + upOne.length) % upOne.length]?.[((j + 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i + 1) + upOne.length) % upOne.length]?.[((j + 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i - 1) + upOne.length) % upOne.length]?.[((j - 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i) + upOne.length) % upOne.length]?.[((j - 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (upOne[((i + 1) + upOne.length) % upOne.length]?.[((j - 1) + upOne[0].length) % upOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-
-            // down a layer
-            if (downOne[((i) + downOne.length) % downOne.length]?.[((j) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i - 1) + downOne.length) % downOne.length]?.[((j) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i + 1) + downOne.length) % downOne.length]?.[((j) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i - 1) + downOne.length) % downOne.length]?.[((j + 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i) + downOne.length) % downOne.length]?.[((j + 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i + 1) + downOne.length) % downOne.length]?.[((j + 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i - 1) + downOne.length) % downOne.length]?.[((j - 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i) + downOne.length) % downOne.length]?.[((j - 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-            if (downOne[((i + 1) + downOne.length) % downOne.length]?.[((j - 1) + downOne[0].length) % downOne[0].length]?.isAlive) {
-              neighborsAlive++;
-            }
-          }
-
-          if (currentCell.isAlive) {
-            if (neighborsAlive < 5 || neighborsAlive > 9) {
-              newCell.isAlive = false;
-            }
-          } else {
-            if (neighborsAlive === 9 || neighborsAlive === 8) {
-              newCell.isAlive = true;
-            }
-          }
-
-        } else {
-          let neighborsAlive = 0;
-          if (layer[((i - 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i + 1) + layer.length) % layer.length]?.[((j) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i - 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i + 1) + layer.length) % layer.length]?.[((j + 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i - 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-          if (layer[((i + 1) + layer.length) % layer.length]?.[((j - 1) + layer[0].length) % layer[0].length]?.isAlive) {
-            neighborsAlive++;
-          }
-
-          if (currentCell.isAlive) {
-            if (neighborsAlive < 2 || neighborsAlive > 3) {
-              newCell.isAlive = false;
-            }
-          } else {
-            if (neighborsAlive === 3) {
-              newCell.isAlive = true;
-            }
-          }
-        }
+  powerups.forEach((powerup) => {
+    if (intersects(player, powerup, playerSize, powerupSize)) {
+      if (powerup.type === 'speed') {
+        player.speed++;
+      } else if (powerup.type === 'size') {
+        playerSize--;
       }
-      newRow.push(newCell);
+    } else {
+      newPowerups.push(powerup);
     }
-    newCells.push(newRow);
-  }
-  layer = newCells;
-  return layer;
+    powerups = newPowerups;
+  });
+
+  fill(0, 0, 0);
+  square(player.x, player.y, playerSize);
 }
 
-class Cell {
-  constructor(x, y, isAlive, lastTouchedByAnt) {
+function intersects(a, b, aSize, bSize) {
+  return a.x < b.x + bSize &&
+    a.x + aSize > b.x &&
+    a.y < b.y + bSize &&
+    a.y + aSize > b.y;
+}
+
+function handleAustins() {
+  austins.forEach((austin) => {
+    austin.move();
+    austin.draw();
+  })
+};
+
+class Austin {
+  constructor(x, y, speed, img) {
     this.x = x;
     this.y = y;
-    this.isAlive = isAlive
-    this.lastTouchedByAnt = lastTouchedByAnt ?? 0;
+    this.speed = speed;
+    this.img = img;
   }
-
-  drawCell(layerIndex) {
-    const opacity = 0.5;
-    if (this.lastTouchedByAnt > 1 && this.isAlive) {
-      fill(...colors[layerIndex].aliveProtected, opacity);
-      square(this.x, this.y, cellSize);
-    } else if (this.isAlive) {
-      fill(...colors[layerIndex].alive, opacity);
-      square(this.x, this.y, cellSize);
-    }
-  }
-
-  drawCellIncludingDead(layerIndex) {
-    const opacity = 0.5;
-    if (this.lastTouchedByAnt > 1 && this.isAlive) {
-      fill(...colors[layerIndex].aliveProtected, opacity);
-      square(this.x, this.y, cellSize);
-    } else if (this.isAlive) {
-      fill(...colors[layerIndex].alive, opacity);
-      square(this.x, this.y, cellSize);
+  move() {
+    if (this.img === aPose) {
+      const angleToPlayer = Math.atan2(player.y - this.y, player.x - this.x);
+      this.x -= Math.cos(angleToPlayer) * this.speed;
+      this.y -= Math.sin(angleToPlayer) * this.speed;
+      this.x = weirdModThing(this.x, width);
+      this.y = weirdModThing(this.y, height);
     } else {
-      fill(0, 100, 100);
-      square(this.x, this.y, cellSize);
+      //TODO: change this
+      const angleToPlayer = Math.atan2(player.y - this.y, player.x - this.x);
+      this.x -= Math.cos(angleToPlayer) * this.speed;
+      this.y -= Math.sin(angleToPlayer) * this.speed;
+      this.x = weirdModThing(this.x, width);
+      this.y = weirdModThing(this.y, height);
     }
   }
+  draw() {
+    image(this.img, this.x, this.y, 50, 50);
+  }
 }
 
-function moveAnt(layerIndex) {
-  const ant = ants[layerIndex]
-  const currentCell = cells[layerIndex][ant.x][ant.y];
-  ant.direction = (ant.direction + translatedTurns[layerIndex][currentCell.isAlive ? 1 : 0] + 4) % 4;
-  currentCell.isAlive = !currentCell.isAlive;
-  currentCell.lastTouchedByAnt = lastTouchedByAntToSet;
-  switch (ant.direction) {
-    case 0: ant.y -= 1; break;
-    case 1: ant.x += 1; break;
-    case 2: ant.y += 1; break;
-    case 3: ant.x -= 1; break;
+class Powerup {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.type = type;
   }
-
-  const cellsPerRow = Math.floor(width / cellSize);
-  const cellsPerColumn = Math.floor(height / cellSize);
-  ant.x = (ant.x + cellsPerRow) % cellsPerRow;
-  ant.y = (ant.y + cellsPerColumn) % cellsPerColumn;
+  draw() {
+    if (this.type === 'speed') {
+      fill(255, 0, 0);
+    } else if (this.type === 'size') {
+      fill(0, 0, 255);
+    }
+    square(this.x, this.y, powerupSize);
+  }
 }
 
-function drawAnt(layerIndex) {
-  const ant = ants[layerIndex]
-  const currentCell = cells[layerIndex][ant.x][ant.y];
 
-  push();
-  fill(currentCell.isAlive ? colors[layerIndex].alive : colors[layerIndex].dead);
-  square(currentCell.x, currentCell.y, cellSize);
-
-  fill(...colors[layerIndex].ant);
-  if (ant.x * cellSize + cellSize >= width) {
-    rect(ant.x * cellSize - cellSize, ant.y * cellSize - cellSize, cellSize * 2, cellSize * 3)
-  } else {
-    square(ant.x * cellSize - cellSize, ant.y * cellSize - cellSize, cellSize * 3)
-  }
-  fill(0, 0, 0);
-  square(ant.x * cellSize, ant.y * cellSize, cellSize)
-  pop();
-}
-
-function mouseThing() {
-  const rowClicked = cells[0][(mouseX - (mouseX % cellSize)) / cellSize];
-  if (!rowClicked) {
-    return;
-  }
-  const cellAtMouse = rowClicked[(mouseY - (mouseY % cellSize)) / cellSize]
-  if (cellAtMouse && cellAtMouse !== currentMouseDrag) {
-    currentMouseDrag = cellAtMouse;
-    for (let i = 0; i <= howManyLayers; i++) {
-      const cellsToChange = [];
-      cellsToChange.push(cells[i][cellAtMouse.x / cellSize][cellAtMouse.y / cellSize]);
-
-      if (killMode) {
-        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize - 1, cells[0].length)][cellAtMouse.y / cellSize]);
-        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize + 1, cells[0].length)][cellAtMouse.y / cellSize]);
-        cellsToChange.push(cells[i][cellAtMouse.x / cellSize][weirdModThing(cellAtMouse.y / cellSize - 1, cells[0][0].length)]);
-        cellsToChange.push(cells[i][cellAtMouse.x / cellSize][weirdModThing(cellAtMouse.y / cellSize + 1, cells[0][0].length)]);
-        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize - 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize - 1, cells[0][0].length)]);
-        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize - 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize + 1, cells[0][0].length)]);
-        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize + 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize - 1, cells[0][0].length)]);
-        cellsToChange.push(cells[i][weirdModThing(cellAtMouse.x / cellSize + 1, cells[0].length)][weirdModThing(cellAtMouse.y / cellSize + 1, cells[0][0].length)]);
-        cellsToChange.forEach((cellToChange) => {
-          cellToChange.isAlive = false;
-        });
-        fill(0, 0, 0);
-        if (cellAtMouse.x + cellSize >= width) {
-          rect(cellsToChange[0].x - cellSize, cellsToChange[0].y - cellSize, cellSize * 2, cellSize * 3);
-        } else {
-          square(cellsToChange[0].x - cellSize, cellsToChange[0].y - cellSize, cellSize * 3);
+function keyPressed() {
+  if (keyCode === 32) {
+    state = (state + 1) % 3;
+    if (state === 1) {
+      timer = 0;
+      player = structuredClone(defaultPlayer);
+      austins = [];
+      austins.push(new Austin(getRandomInts(0, width), getRandomInts(0, height), getRandomInts(-1, 1), Math.random() > 0.5 ? face : aPose));
+      powerups = [];
+      powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
+      setInterval(() => {
+        if (state === 1) {
+          austins.push(new Austin(getRandomInts(0, width), getRandomInts(0, height), getRandomInts(-1, 1), Math.random() > 0.5 ? face : aPose));
+          powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
         }
-      } else {
-        cellsToChange[0].isAlive = !cellsToChange[0].isAlive
-        cellsToChange[0].drawCellIncludingDead(i);
-      }
+      }, 3000);
     }
-  };
-}
-
-function mousePressed() {
-  mouseThing()
-}
-
-function mouseDragged() {
-  mouseThing()
-}
-
-function mouseReleased() {
-  currentMouseDrag = undefined;
+  }
 }
 
 function weirdModThing(numberToMod, total) {
@@ -403,50 +192,4 @@ function getRandomInts(min, max, howManyInts = 1) {
     numbers.push(Math.floor(Math.random() * (max - min) + min));
   }
   return numbers;
-}
-
-// Fisher-Yates shuffle algorithm from https://bost.ocks.org/mike/shuffle/
-function shuffle(array) {
-  let m = array.length, t, i;
-  while (m) {
-    i = Math.floor(Math.random() * m--);
-    t = array[m];
-    array[m] = array[i];
-    array[i] = t;
-  }
-
-  return array;
-}
-
-function setUpControls() {
-  removeElements();
-
-  textSize(14)
-  fill(0, 0, 0)
-
-  text('Framerate', width + 10, 75)
-  frameRateSlider = createSlider(0, 60, 15, 1);
-  frameRateSlider.position(width + 10, 75);
-  frameRateSlider.size(160);
-  frameRateSlider.mouseClicked(() => frameRate(frameRateSlider.value()))
-
-  text('Ant protection duration', width + 10, 125)
-  lastTouchedByAntToSetSlider = createSlider(0, 200, 50, 1);
-  lastTouchedByAntToSetSlider.position(width + 10, 125);
-  lastTouchedByAntToSetSlider.size(160);
-
-  text('layer', width + 10, 175);
-  layerSlider = createSlider(0, colors.length - 1, 0, 1);
-  layerSlider.position(width + 10, 175);
-  layerSlider.size(160);
-
-  text('deadly cursor?', width + 10, 225);
-  killSlider = createSlider(0, 1, 0, 1);
-  killSlider.position(width + 10, 225);
-  killSlider.size(160);
-
-  text('3D?', width + 10, 275);
-  do3DSlider = createSlider(0, 1, 0, 1);
-  do3DSlider.position(width + 10, 275);
-  do3DSlider.size(160);
 }
