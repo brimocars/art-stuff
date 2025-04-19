@@ -251,20 +251,26 @@ function keyPressed() {
     if (state === 1) {
       timer = 1;
       player = structuredClone(defaultPlayer);
-      austins = [];
-
+      playerSize = 50;
+      powerupSize = 30;
+      austinSize = 50;
+      timer = 1;
+      win = false;
+      player = structuredClone(defaultPlayer);
+      
       const playerSafeArea = {
         x: player.x - playerSize,
         y: player.y - playerSize,
       }
-
+      
       let newAustin = new Austin(getRandomInts(0, width), getRandomInts(0, height), 1, Math.random() > 0.5 ? face : aPose);
       while (intersects(playerSafeArea, newAustin, playerSize * 3, austinSize)) {
         console.log('collision');
         newAustin = new Austin(getRandomInts(0, width), getRandomInts(0, height), 1, Math.random() > 0.5 ? face : aPose);
       }
-
+      austins = [];
       austins.push(newAustin);
+      
       powerups = [];
       powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
       powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
