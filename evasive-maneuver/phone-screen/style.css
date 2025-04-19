@@ -19,7 +19,9 @@ button {
   height: 40%;
   margin: 10px;
   color: white;
-  font-size: 50px
+  font-size: 50px;
+  padding: 0px;
+  text-align: center;
 }
 
 #horizontal button {
