@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "start": "npm --prefix ./evasive-maneuver/server start",
-    "heroku-postbuild": "cd ./evasivmaneuver/server && npm install"
+    "heroku-postbuild": "cd ./evasive-maneuver/server && npm install"
   }
 }
