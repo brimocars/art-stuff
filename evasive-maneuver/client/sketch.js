@@ -120,6 +120,10 @@ function handlePlayer() {
     powerups = newPowerups;
   });
 
+  if (!powerups.length) {
+    powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
+  }
+
   austins.forEach((austin) => {
     if (intersects(player, austin, playerSize, austinSize)) {
       state = 2;
