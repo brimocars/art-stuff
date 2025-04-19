@@ -107,8 +107,8 @@ function handlePlayer() {
       if (powerup.type === 'speed') {
         player.maxSpeed++;
       } else if (powerup.type === 'size') {
-        playerSize -= 3;
-        austinSize -= 3;
+        playerSize -= 4;
+        austinSize -= 4;
         if (playerSize <= 5) {
           state = 2;
           win = true;
