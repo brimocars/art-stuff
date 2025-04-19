@@ -44,12 +44,12 @@ const init = async () => {
       }
     });
 
-    button.element.addEventListener('touchstart', () => {
+    button.element.addEventListener('touchstart', (e) => {
       e.preventDefault();
       mousedown = true;
       socket.emit('controls', `${button.name}-down`);
     });
-    button.element.addEventListener('touchend', () => {
+    button.element.addEventListener('touchend', (e) => {
       e.preventDefault();
       mousedown = false;
       socket.emit('controls', `${button.name}-up`);
