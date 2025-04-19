@@ -23,6 +23,7 @@ button {
   padding: 0px;
   text-align: center;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 #horizontal button {
