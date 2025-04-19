@@ -120,12 +120,12 @@ function handlePlayer() {
     powerups = newPowerups;
   });
 
-  // austins.forEach((austin) => {
-  //   if (intersects(player, austin, playerSize, austinSize)) {
-  //     state = 2;
-  //     win = false;
-  //   }
-  // })
+  austins.forEach((austin) => {
+    if (intersects(player, austin, playerSize, austinSize)) {
+      state = 2;
+      win = false;
+    }
+  })
 
   fill(0, 0, 0);
   square(player.x, player.y, playerSize);

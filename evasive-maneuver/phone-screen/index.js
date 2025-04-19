@@ -45,10 +45,12 @@ const init = async () => {
     });
 
     button.element.addEventListener('touchstart', () => {
+      e.preventDefault();
       mousedown = true;
       socket.emit('controls', `${button.name}-down`);
     });
     button.element.addEventListener('touchend', () => {
+      e.preventDefault();
       mousedown = false;
       socket.emit('controls', `${button.name}-up`);
     });
