@@ -239,6 +239,10 @@ function addStuff () {
     austins.push(newAustin);
     powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
   }
+
+  if (timer > 800 && timer % 180 === 0) {
+    austins.shift();
+  }
 }
 
 function keyPressed() {
