@@ -1,5 +1,6 @@
 {
   "name": "art-stuff",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "npm --prefix ./evasive-maneuver/server start",
