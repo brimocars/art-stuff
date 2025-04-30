@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "npm --prefix ./evasive-maneuver/server start",
-    "heroku-postbuild": "cd ./evasive-maneuver/server && npm install"
+    "start": "npm --prefix ./project-4/server start",
+    "heroku-postbuild": "cd ./project-4/server && npm install"
   }
 }
