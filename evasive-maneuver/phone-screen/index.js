@@ -43,6 +43,17 @@ const init = async () => {
         socket.emit('controls', `${button.name}-down`);
       }
     });
+
+    button.element.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mousedown = true;
+      socket.emit('controls', `${button.name}-down`);
+    });
+    button.element.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      mousedown = false;
+      socket.emit('controls', `${button.name}-up`);
+    });
   });
 
   const res = await resPromise;

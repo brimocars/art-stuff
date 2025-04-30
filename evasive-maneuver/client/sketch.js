@@ -107,8 +107,8 @@ function handlePlayer() {
       if (powerup.type === 'speed') {
         player.maxSpeed++;
       } else if (powerup.type === 'size') {
-        playerSize -= 3;
-        austinSize -= 3;
+        playerSize -= 4;
+        austinSize -= 4;
         if (playerSize <= 5) {
           state = 2;
           win = true;
@@ -120,12 +120,16 @@ function handlePlayer() {
     powerups = newPowerups;
   });
 
-  // austins.forEach((austin) => {
-  //   if (intersects(player, austin, playerSize, austinSize)) {
-  //     state = 2;
-  //     win = false;
-  //   }
-  // })
+  if (!powerups.length) {
+    powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
+  }
+
+  austins.forEach((austin) => {
+    if (intersects(player, austin, playerSize, austinSize)) {
+      state = 2;
+      win = false;
+    }
+  })
 
   fill(0, 0, 0);
   square(player.x, player.y, playerSize);
@@ -239,6 +243,10 @@ function addStuff () {
     austins.push(newAustin);
     powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
   }
+
+  if (timer > 800 && timer % 180 === 0) {
+    austins.shift();
+  }
 }
 
 function keyPressed() {
@@ -247,20 +255,26 @@ function keyPressed() {
     if (state === 1) {
       timer = 1;
       player = structuredClone(defaultPlayer);
-      austins = [];
-
+      playerSize = 50;
+      powerupSize = 30;
+      austinSize = 50;
+      timer = 1;
+      win = false;
+      player = structuredClone(defaultPlayer);
+      
       const playerSafeArea = {
         x: player.x - playerSize,
         y: player.y - playerSize,
       }
-
+      
       let newAustin = new Austin(getRandomInts(0, width), getRandomInts(0, height), 1, Math.random() > 0.5 ? face : aPose);
       while (intersects(playerSafeArea, newAustin, playerSize * 3, austinSize)) {
         console.log('collision');
         newAustin = new Austin(getRandomInts(0, width), getRandomInts(0, height), 1, Math.random() > 0.5 ? face : aPose);
       }
-
+      austins = [];
       austins.push(newAustin);
+      
       powerups = [];
       powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
       powerups.push(new Powerup(getRandomInts(0, width), getRandomInts(0, height), Math.random() > 0.5 ? 'speed' : 'size'));
