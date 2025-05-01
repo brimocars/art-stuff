@@ -124,9 +124,9 @@ function draw() {
           upDown = Math.max(-30, Math.min(30, upDown));
 
           console.log(leftRight, upDown);
-          value.x += value.currentLeftRight;
-          value.y += value.currentUpDown;
-          console.log(`player: ${value}`);
+          value.x += value.leftRight;
+          value.y += value.upDown;
+          console.log(`player: ${JSON.stringify(value)}`);
         })
         Object.entries(connectedPlayers).forEach(([key, value]) => {
           Object.entries(connectedPlayers).forEach(([key2, value2]) => {
