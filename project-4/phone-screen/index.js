@@ -32,6 +32,7 @@ const init = async () => {
         }
       }
       window.addEventListener('deviceorientation', handleOrientation);
+      document.querySelector('#inner').innerHTML = 'Tilt me!';
     } catch (err) {
       console.error('Error requesting gyroscope permission:', err);
     }
