@@ -9,7 +9,7 @@ const possiblePlayers = [
   'f5931b', // orange
   'fc239e', // pink
   '4affe4', // cyan
-  'f5b431', // brown
+  '4a3a0e', // brown
 ];
 
 const player = async (req, res) => {
