@@ -60,8 +60,7 @@ function draw() {
           playersWithInput.forEach((player) => {
             connectedPlayers[player] = {};
           })
-          //TODO: remove
-          //playersWithInput.clear();
+          playersWithInput.clear();
         }, 5000);
       }
       if (qrCode) {
@@ -120,8 +119,14 @@ function draw() {
           background(255, 255, 255);
         }
         Object.entries(connectedPlayers).forEach(([key, value]) => {
-          value.x += value.currentLeftRight * 5;
-          value.y += value.currentUpDown * 5;
+          let leftRight = parseFloat(value.currentLeftRight);
+          leftRight = Math.max(-30, Math.min(30, leftRight));
+          let upDown = parseFloat(value.currentUpDown);
+          upDown = Math.max(-30, Math.min(30, upDown));
+
+          console.log(leftRight, upDown);
+          value.x += value.currentLeftRight;
+          value.y += value.currentUpDown;
         })
         Object.entries(connectedPlayers).forEach(([key, value]) => {
           Object.entries(connectedPlayers).forEach(([key2, value2]) => {
