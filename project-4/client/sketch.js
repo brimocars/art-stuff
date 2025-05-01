@@ -64,7 +64,9 @@ function draw() {
           //playersWithInput.clear();
         }, 5000);
       }
-      image(qrCode, 10, 10, width / 8, width / 8);
+      if (qrCode) {
+        image(qrCode, 10, 10, width / 8, width / 8);
+      }
 
       stroke(15, 15, 15);
       
