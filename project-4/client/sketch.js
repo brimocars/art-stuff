@@ -18,8 +18,8 @@ const controllerState = {};
 socket.on('inputFromController', msg => {
   const breakdown = msg.split('|');
   const player = breakdown[0];
-  const leftRight = breakdown[2];
-  const upDown = breakdown[3];
+  const upDown = breakdown[2];
+  const leftRight = breakdown[3];
   if (state === 0) {
     playersWithInput.add(player);
   } else if (state === 1) {
