@@ -6,7 +6,7 @@ const registerIo = (ioObj) => {
   
     io.on('connection', (socket) => {
         socket.on('controls', (msg) => {
-            const player = msg.split('-')[0];
+            const player = msg.split('|')[0];
             model.playerStillConnected(player);
             io.emit('inputFromController', msg);
         });

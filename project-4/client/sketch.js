@@ -17,7 +17,7 @@ const socket = io();
 const controllerState = {};
 socket.on('inputFromController', msg => {
   console.log(msg)
-  const breakdown = msg.split('-');
+  const breakdown = msg.split('|');
   const player = breakdown[0];
   const leftRight = breakdown[2];
   const upDown = breakdown[3];

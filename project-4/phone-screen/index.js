@@ -5,10 +5,10 @@ let player = '';
 function handleOrientation(event) {
   if (!event.alpha || !event.beta || !event.gamma) {
     console.error('cannot read gyroscope data');
-    socket.emit('controls', `${player}-0-0-0`);
+    socket.emit('controls', `${player}|0|0|0`);
     return;
   }
-  socket.emit('controls', `${player}-${event.alpha.toFixed(2)}-${event.beta.toFixed(2)}-${event.gamma.toFixed(2)}`);
+  socket.emit('controls', `${player}|${event.alpha.toFixed(2)}|${event.beta.toFixed(2)}|${event.gamma.toFixed(2)}`);
 }
 
 const init = async () => {
