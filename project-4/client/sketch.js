@@ -20,11 +20,13 @@ const controllerState = {};
 socket.on('inputFromController', msg => {
   const breakdown = msg.split('|');
   const player = breakdown[0];
+  const rotation = breakdown[1];
   const upDown = breakdown[2];
   const leftRight = breakdown[3];
   if (state === 0) {
     playersWithInput.add(player);
   } else if (state === 1) {
+    connectedPlayers[player].currentRotation = rotation;
     connectedPlayers[player].currentLeftRight = leftRight;
     connectedPlayers[player].currentUpDown = upDown;
   }
@@ -73,9 +75,13 @@ function draw() {
       let i = 0;
       strokeWeight(2);
       Object.keys(connectedPlayers).forEach((player) => {
+        push();
         fill(`#${player}`);
-        square(width / 4 + i * 2 * playerSize, height * 3 / 4, playerSize);
+        translate(player.x + playerSize / 2, player.y + playerSize / 2);
+        rotate(connectedPlayers[player].currentRotation);
+        square(width / 4 + i * 2 * playerSize, height * 5 / 6, playerSize);
         i++;
+        pop();
       })
       
       strokeWeight(8);
@@ -84,6 +90,7 @@ function draw() {
       
       textSize(50);
       text('Tilt your phone to fill the most screen', width / 2 - 375, height / 2 + 80);
+      text("Press space to start", width / 2 - 200, height / 2 + 200);
       break;
     case 1:
       if (isFirstFrameOnNewState) {
@@ -163,19 +170,22 @@ function draw() {
     case 2:
       if (isFirstFrameOnNewState) {
         isFirstFrameOnNewState = false;
-        saveCanvas('out.png');
-        // const colorThief = new ColorThief();
-        // const imageSrc = canvas.elt.toDataURL('image/png');
-        // const imageElement = new Image();
-        // imageElement.src = imageSrc;
-        // const colors = colorThief.getColor(imageElement)
-        // console.log(colors)
+        getWinningColor().then((color) => {
+          winningColor = color;
+        })
       }
-      // stroke(15, 15, 15);
-      // fill(15, 15, 15);
-      // textSize(50);
-      // text(win ? "You won!" : 'Game Over', width / 2 - 200, height / 2 - 80);
-      // text("Press space to reset", width / 2 - 200, height / 2 + 80);
+      background(255, 255, 255);
+      if (winningColor) {
+        stroke(15, 15, 15);
+        fill(15, 15, 15);
+        textSize(100);
+        text('Winner!', width / 2 - 150, height / 2 - 80);
+        textSize(50);
+        text("Press space to reset", width / 2 - 200, height / 2 + 200);
+        noStroke();
+        fill(...winningColor);
+        square(width / 2 - playerSize / 2, height / 2, playerSize);      
+      }
       break;
   }
 }
@@ -184,8 +194,12 @@ function drawPlayers() {
   stroke(0, 0, 0);
   strokeWeight(0);
   Object.entries(connectedPlayers).forEach(([key, value]) => {
+    push(); 
     fill(`#${key}`);
+    translate(player.x + playerSize / 2, player.y + playerSize / 2);
+    rotate(connectedPlayers[player].currentRotation);
     square(value.x, value.y, playerSize);
+    pop();
   })
 }
 
@@ -208,6 +222,24 @@ function resolveCollision(a, b) {
       if (!b.dragging) b.y -= push / 2;
     }
   }
+}
+
+function getWinningColor() {
+  return new Promise((resolve, reject) => {
+    const imageSrc = canvas.elt.toDataURL('image/png');
+    const imageElement = new Image();
+    imageElement.src = imageSrc;
+    imageElement.onload = () => {
+      try {
+        const colorThief = new ColorThief();
+        const winningColor = colorThief.getColor(imageElement);
+        resolve(winningColor)
+      } catch (err) {
+        console.error('Error getting winning color:', err);
+        reject(err);
+      }
+    }
+  })
 }
 
 function keyPressed() {
