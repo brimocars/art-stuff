@@ -74,11 +74,11 @@ function draw() {
       
       let i = 0;
       strokeWeight(2);
-      Object.keys(connectedPlayers).forEach((player) => {
+      Object.entries(connectedPlayers).forEach(([key, value]) => {
         push();
-        fill(`#${player}`);
-        translate(player.x + playerSize / 2, player.y + playerSize / 2);
-        rotate(connectedPlayers[player].currentRotation);
+        fill(`#${key}`);
+        translate(value.x + playerSize / 2, value.y + playerSize / 2);
+        rotate(value.currentRotation);
         square(width / 4 + i * 2 * playerSize, height * 5 / 6, playerSize);
         i++;
         pop();
@@ -197,7 +197,7 @@ function drawPlayers() {
     push(); 
     fill(`#${key}`);
     translate(value.x + playerSize / 2, value.y + playerSize / 2);
-    rotate(connectedPlayers[player].currentRotation);
+    rotate(value.currentRotation);
     square(value.x, value.y, playerSize);
     pop();
   })
