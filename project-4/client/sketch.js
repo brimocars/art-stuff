@@ -196,7 +196,7 @@ function drawPlayers() {
   Object.entries(connectedPlayers).forEach(([key, value]) => {
     push(); 
     fill(`#${key}`);
-    translate(player.x + playerSize / 2, player.y + playerSize / 2);
+    translate(value.x + playerSize / 2, value.y + playerSize / 2);
     rotate(connectedPlayers[player].currentRotation);
     square(value.x, value.y, playerSize);
     pop();
