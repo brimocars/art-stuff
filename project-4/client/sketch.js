@@ -7,6 +7,8 @@ let qrCode;
 let connectedPlayerInterval = null;
 let startCountDown = 3;
 isFirstFrameOfGame = true;
+let canvas;
+let winningColor;
 
 let connectedPlayers = {};
 const playersWithInput = new Set();
@@ -42,7 +44,7 @@ async function preload() {
 
 function setup() {
   frameRate(60);
-  createCanvas(width, height);
+  canvas = createCanvas(width, height);
   angleMode(DEGREES);
   noStroke();
 }
@@ -120,12 +122,18 @@ function draw() {
         Object.entries(connectedPlayers).forEach(([key, value]) => {
           let leftRight = parseFloat(value.currentLeftRight);
           leftRight = Math.max(-30, Math.min(30, leftRight));
+          if (Math.abs(leftRight) < 2) {
+            leftRight = 0;
+          }
           let upDown = parseFloat(value.currentUpDown);
           upDown = Math.max(-30, Math.min(30, upDown));
+          if (Math.abs(upDown) < 2) {
+            upDown = 0;
+          }
 
           console.log(leftRight, upDown);
-          value.x += leftRight;
-          value.y += upDown;
+          value.x += leftRight / 2;
+          value.y += upDown / 2;
           console.log(`player: ${JSON.stringify(value)}`);
         })
         Object.entries(connectedPlayers).forEach(([key, value]) => {
@@ -153,6 +161,15 @@ function draw() {
 
       break;
     case 2:
+      if (isFirstFrameOnNewState) {
+        const colorThief = new ColorThief();
+        isFirstFrameOnNewState = false;
+        const imageSrc = canvas.elt.toDataURL('image/png');
+        const imageElement = document.createElement('img');
+        imageElement.src = imageSrc;
+        const colors = colorThief.getColor(imageElement)
+        
+      }
       // stroke(15, 15, 15);
       // fill(15, 15, 15);
       // textSize(50);
@@ -207,11 +224,6 @@ function loadImageAsync(image) {
     loadImage(image, (img) => resolve(img), (err) => reject(err));
   });
 }
-
-//TODO: Remove?
-// function weirdModThing(numberToMod, total) {
-//   return (numberToMod + total) % total;
-// }
 
 function getRandomInts(min, max, howManyInts = 1) {
   if (howManyInts === 1) {
