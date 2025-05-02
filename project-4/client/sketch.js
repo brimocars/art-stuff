@@ -80,10 +80,10 @@ function draw() {
       
       strokeWeight(8);
       textSize(100);
-      text('Tilt!', width / 2, height / 2 - 80);
+      text('Tilt!', width / 2 - 40, height / 2 - 80);
       
       textSize(50);
-      text('Tilt your phone to fill the most screen', width / 2 - 300, height / 2 + 80);
+      text('Tilt your phone to fill the most screen', width / 2 - 375, height / 2 + 80);
       break;
     case 1:
       if (isFirstFrameOnNewState) {
@@ -162,13 +162,14 @@ function draw() {
       break;
     case 2:
       if (isFirstFrameOnNewState) {
-        const colorThief = new ColorThief();
         isFirstFrameOnNewState = false;
-        const imageSrc = canvas.elt.toDataURL('image/png');
-        const imageElement = document.createElement('img');
-        imageElement.src = imageSrc;
-        const colors = colorThief.getColor(imageElement)
-        
+        saveCanvas('out.png');
+        // const colorThief = new ColorThief();
+        // const imageSrc = canvas.elt.toDataURL('image/png');
+        // const imageElement = new Image();
+        // imageElement.src = imageSrc;
+        // const colors = colorThief.getColor(imageElement)
+        // console.log(colors)
       }
       // stroke(15, 15, 15);
       // fill(15, 15, 15);
