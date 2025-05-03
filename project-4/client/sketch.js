@@ -271,6 +271,8 @@ function keyPressed() {
     isFirstFrameOnNewState = true;
     if (state > 2) {
       state = 0;
+      startCountDown = 3;
+      gameTimer = 30;
     }
   }
 }
