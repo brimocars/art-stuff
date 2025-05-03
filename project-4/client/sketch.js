@@ -84,10 +84,9 @@ function draw() {
       Object.entries(connectedPlayers).forEach(([key, value]) => {
         push();
         fill(`#${key}`);
-        translate(value.x + playerSize / 2, value.y + playerSize / 2);
-        console.log(value.rotation);
+        translate(width / 4 + i * 2 * playerSize, height * 5 / 6);
+        console.log(value.currentRotation);
         rotate(value.currentRotation);
-        translate(-value.x - playerSize / 2, -value.y - playerSize / 2);
         square(width / 4 + i * 2 * playerSize, height * 5 / 6, playerSize);
         i++;
         pop();
@@ -207,7 +206,7 @@ function drawPlayers() {
     fill(`#${key}`);
     translate(value.x + playerSize / 2, value.y + playerSize / 2);
     rotate(value.currentRotation);
-    square(value.x, value.y, playerSize);
+    square(0, 0, playerSize);
     pop();
   })
 }
