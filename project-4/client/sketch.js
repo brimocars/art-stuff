@@ -58,6 +58,13 @@ function draw() {
       if (isFirstFrameOnNewState) {
         isFirstFrameOnNewState = false;
         fill(255, 255, 255);
+        // do the thing once now because I'm tired of waiting 5 seconds to test every time
+        connectedPlayers = {};
+        playersWithInput.forEach((player) => {
+          connectedPlayers[player] = {};
+        })
+        playersWithInput.clear();
+        // interval to only get actually connected players. leavers will be removed.
         connectedPlayerInterval = setInterval(() => {
           connectedPlayers = {};
           playersWithInput.forEach((player) => {
@@ -78,7 +85,9 @@ function draw() {
         push();
         fill(`#${key}`);
         translate(value.x + playerSize / 2, value.y + playerSize / 2);
+        console.log(value.rotation);
         rotate(value.currentRotation);
+        translate(-value.x - playerSize / 2, -value.y - playerSize / 2);
         square(width / 4 + i * 2 * playerSize, height * 5 / 6, playerSize);
         i++;
         pop();
