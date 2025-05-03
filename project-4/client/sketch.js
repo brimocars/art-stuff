@@ -43,7 +43,7 @@ async function preload() {
       'Content-Type': 'application/json'
     },
   })
-  const imageData = await res.text(); // Get the base64 string
+  const imageData = await res.text();
   qrCode = await loadImageAsync(imageData);
 }
 
@@ -61,7 +61,7 @@ function draw() {
       if (isFirstFrameOnNewState) {
         isFirstFrameOnNewState = false;
         fill(255, 255, 255);
-        // do the thing once now because I'm tired of waiting 5 seconds to test every time
+        // do the thing once immediately because I'm tired of waiting 5 seconds to test every time
         connectedPlayers = {};
         playersWithInput.forEach((player) => {
           connectedPlayers[player] = {};
@@ -142,6 +142,7 @@ function draw() {
               gameTimerInterval = null;
               state++;
               isFirstFrameOnNewState = true;
+              gameTimer = 30;
             }
           }, 1000);
         }
@@ -183,7 +184,7 @@ function draw() {
         drawPlayers();
         fill(15, 15, 15);
         textSize(30);
-        text(gameTimer, width + 20, 20);
+        text(gameTimer, 20, 20);
       }
 
       break;
