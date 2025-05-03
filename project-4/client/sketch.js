@@ -183,10 +183,10 @@ function draw() {
       
         drawPlayers();
         fill(255, 255, 255);
-        rect(20, 40, 20, 200);
+        rect(0, 0, 35, 25);
         fill(15, 15, 15);
         textSize(30);
-        text(gameTimer, 20, 40);
+        text(gameTimer, 1, 25);
       }
 
       break;
