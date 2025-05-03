@@ -9,6 +9,8 @@ let startCountDown = 3;
 isFirstFrameOfGame = true;
 let canvas;
 let winningColor;
+let gameTimer = 30;
+gameTimerInterval = null;
 
 let connectedPlayers = {};
 const playersWithInput = new Set();
@@ -85,10 +87,9 @@ function draw() {
       Object.entries(connectedPlayers).forEach(([key, value]) => {
         push();
         fill(`#${key}`);
-        translate(width / 4 + i * 2 * playerSize, height * 5 / 6);
-        console.log(value.currentRotation);
+        translate((width / 4 + i * 2 * playerSize) + (playerSize / 2), (height * 5 / 6) + (playerSize / 2));
         rotate(value.currentRotation);
-        square(width / 4 + i * 2 * playerSize, height * 5 / 6, playerSize);
+        square(-playerSize / 2, -playerSize / 2, playerSize);
         i++;
         pop();
       })
@@ -134,6 +135,15 @@ function draw() {
         if (isFirstFrameOfGame) {
           isFirstFrameOfGame = false;
           background(255, 255, 255);
+          gameTimerInterval = setInterval(() => {
+            gameTimer -= 1;
+            if (gameTimer <= 0) {
+              clearInterval(gameTimerInterval);
+              gameTimerInterval = null;
+              state++;
+              isFirstFrameOnNewState = true;
+            }
+          }, 1000);
         }
         Object.entries(connectedPlayers).forEach(([key, value]) => {
           let leftRight = parseFloat(value.currentLeftRight);
@@ -171,6 +181,9 @@ function draw() {
         })
       
         drawPlayers();
+        fill(15, 15, 15);
+        textSize(30);
+        text(gameTimer, width + 20, 20);
       }
 
       break;
@@ -203,9 +216,9 @@ function drawPlayers() {
   Object.entries(connectedPlayers).forEach(([key, value]) => {
     push(); 
     fill(`#${key}`);
-    translate(value.x, value.y);
+    translate(value.x + playerSize / 2, value.y + playerSize / 2);
     rotate(value.currentRotation);
-    square(0, 0, playerSize);
+    square(-playerSize / 2, -playerSize / 2, playerSize);
     pop();
   })
 }
