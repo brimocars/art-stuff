@@ -25,6 +25,7 @@ socket.on('inputFromController', msg => {
   const leftRight = breakdown[3];
   if (state === 0) {
     playersWithInput.add(player);
+    connectedPlayers[player].currentRotation = rotation;
   } else if (state === 1) {
     connectedPlayers[player].currentRotation = rotation;
     connectedPlayers[player].currentLeftRight = leftRight;
@@ -146,10 +147,8 @@ function draw() {
             upDown = 0;
           }
 
-          console.log(leftRight, upDown);
           value.x += leftRight / 2;
           value.y += upDown / 2;
-          console.log(`player: ${JSON.stringify(value)}`);
         })
         Object.entries(connectedPlayers).forEach(([key, value]) => {
           Object.entries(connectedPlayers).forEach(([key2, value2]) => {
@@ -204,7 +203,7 @@ function drawPlayers() {
   Object.entries(connectedPlayers).forEach(([key, value]) => {
     push(); 
     fill(`#${key}`);
-    translate(value.x + playerSize / 2, value.y + playerSize / 2);
+    translate(value.x, value.y);
     rotate(value.currentRotation);
     square(0, 0, playerSize);
     pop();
@@ -243,7 +242,7 @@ function getWinningColor() {
         const winningColor = colorThief.getColor(imageElement);
         resolve(winningColor)
       } catch (err) {
-        console.error('Error getting winning color:', err);
+        console.log('Error getting winning color:', err);
         reject(err);
       }
     }
