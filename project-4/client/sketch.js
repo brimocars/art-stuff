@@ -101,6 +101,7 @@ function draw() {
       textSize(50);
       text('Tilt your phone to fill the most screen', width / 2 - 375, height / 2 + 80);
       text("Press space to start", width / 2 - 200, height / 2 + 200);
+      isFirstFrameOfGame = true;
       break;
     case 1:
       if (isFirstFrameOnNewState) {
